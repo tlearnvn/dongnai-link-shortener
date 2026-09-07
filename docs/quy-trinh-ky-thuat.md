@@ -23,7 +23,8 @@ Người dùng cuối xem [Hướng dẫn sử dụng](huong-dan-su-dung.md).
 11. [Quy trình kiểm định](#11-quy-trình-kiểm-định)
 12. [Quy trình sao lưu và phục hồi](#12-quy-trình-sao-lưu-và-phục-hồi)
 13. [Quy trình nâng cấp phiên bản](#13-quy-trình-nâng-cấp-phiên-bản)
-14. [Xử lý sự cố thường gặp](#14-xử-lý-sự-cố-thường-gặp)
+14. [Quy trình phát hành bản mới](#13b-quy-trình-phát-hành-bản-mới)
+15. [Xử lý sự cố thường gặp](#14-xử-lý-sự-cố-thường-gặp)
 
 ---
 
@@ -786,6 +787,70 @@ Cấu trúc bảng có phiên bản riêng, lưu ở khoá `schema_version` tron
 `settings`. `Database::migrate()` chạy `CREATE TABLE IF NOT EXISTS` mỗi lần
 khởi động nên thêm bảng mới là tự động; nếu bản mới cần **đổi cột**, ghi chú
 sẽ nằm trong `CHANGELOG.md`.
+
+---
+
+## 13b. Quy trình phát hành bản mới
+
+Dành cho người bảo trì mã nguồn.
+
+```mermaid
+flowchart TD
+    A["1· Chạy php tests/run_all.php<br/>phải đạt hết, nhật ký sạch"] --> B
+    B["2· Cập nhật CHANGELOG.md<br/>thêm mục ## [X.Y.Z] — ngày"] --> C
+    C["3· php tools/build-release.php<br/>tự lấy số phiên bản từ CHANGELOG"] --> D
+    D["4· Soát nội dung gói:<br/>unzip -Z1 dist/rutgon-link-vX.Y.Z.zip"] --> E
+    E["5· Thử triển khai: giải nén ra thư mục trắng,<br/>chép tests/ vào, chạy lại bộ kiểm định"] --> F
+    F["6· Commit + tạo thẻ vX.Y.Z"] --> G
+    G["7· Trên GitHub: Releases → Draft a new release<br/>chọn thẻ, dán phần CHANGELOG, đính kèm .zip"] --> H
+    H["Xong — người dùng tải ở trang Releases"]
+
+    style A fill:#fef3c7,stroke:#d97706
+    style E fill:#fef3c7,stroke:#d97706
+    style H fill:#dcfce7,stroke:#16a34a
+```
+
+### Đóng gói
+
+```bash
+php tools/build-release.php          # lấy số phiên bản từ CHANGELOG.md
+php tools/build-release.php 1.1.0    # hoặc chỉ định
+```
+
+Kết quả ở `dist/`: tệp `.zip` và tệp `.sha256` đi kèm.
+
+Script dùng **danh sách trắng** các mục đưa vào (`$include`) chứ không phải
+danh sách loại trừ — nhờ vậy tệp lạ nằm trong thư mục làm việc không bao giờ
+lọt vào bản phát hành. Những thứ bị loại dứt khoát: `tests/`, `tools/`,
+`dist/`, `docs/images/`, mọi tệp `.sqlite`, `.log`, và
+`app/config.local.php`.
+
+### Hai đường tải, cả hai đều triển khai được ngay
+
+| Đường tải | Nội dung | Ghi chú |
+|---|---|---|
+| Tệp `.zip` đính kèm ở trang **Releases** | 77 tệp, ~200 KB | Giải nén ra là dùng ngay, có kèm `CAI-DAT-NHANH.txt` |
+| Bản `.zip`/`.tar.gz` GitHub tự sinh cho mỗi thẻ | 90 tệp, ~200 KB | Nhờ `export-ignore` trong `.gitattributes` nên cũng không có `tests/`, `tools/`, ảnh tài liệu. Chỉ khác là nội dung nằm trong một thư mục con |
+
+> Nút **"Download ZIP"** ở trang chính của repo (tải nhánh, không phải thẻ)
+> **có** chứa `tests/` và `tools/`. Đừng hướng người dùng tải bằng nút đó.
+
+### Kiểm tra trước khi công bố
+
+```bash
+# Soát nội dung gói
+unzip -Z1 dist/rutgon-link-v1.0.0.zip | head -20
+
+# Thử triển khai thật
+mkdir /tmp/thu && cd /tmp/thu
+unzip -q ~/dongnai-link-shortener/dist/rutgon-link-v1.0.0.zip
+cp -r ~/dongnai-link-shortener/tests ./tests   # tests/ không nằm trong gói
+php tests/run_all.php
+```
+
+Nếu có Apache, kiểm tra thêm rằng `.htaccess` hoạt động: `/data/rutgon.sqlite`
+và `/app/config.php` phải trả về **403**. Máy chủ `php -S` **không đọc**
+`.htaccess` nên không kiểm tra được việc này.
 
 ---
 
