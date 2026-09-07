@@ -330,7 +330,7 @@ Bộ giải mã QR trong `tests/qr_decoder.php` được viết **độc lập**
 `app/lib/QrCode.php` (dựng lại từ mô tả trong chuẩn), nên nếu bộ mã hoá sai
 thì test phát hiện được, chứ không phải hai bên cùng sai rồi triệt tiêu nhau.
 
-Kết quả mong đợi: **268 hạng mục đạt, 0 lỗi**, nhật ký máy chủ sạch — số
+Kết quả mong đợi: **272 hạng mục đạt, 0 lỗi**, nhật ký máy chủ sạch — số
 hạng mục **bằng nhau trên cả hai loại cơ sở dữ liệu**.
 
 `tests/db_test.php` kiểm theo **kết quả trả về**, không chỉ kiểm có báo lỗi

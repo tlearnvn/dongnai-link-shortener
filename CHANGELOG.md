@@ -29,7 +29,7 @@ Nhóm thay đổi dùng các nhãn: **Thêm mới**, **Thay đổi**, **Đã s�
 ## [1.1.0] — 2026-09-07
 
 Thêm lựa chọn dùng **MySQL / MariaDB** thay cho SQLite. Đã kiểm định
-**268 hạng mục, 0 lỗi** trên **cả hai** loại cơ sở dữ liệu.
+**272 hạng mục, 0 lỗi** trên **cả hai** loại cơ sở dữ liệu.
 
 > **Nâng cấp từ 1.0.0:** ghi đè `index.php`, `.htaccess`, `app/`, `assets/`,
 > `tools/` là xong. **Không phải làm gì thêm** — mặc định vẫn là SQLite và
@@ -97,6 +97,13 @@ có thể tái diễn khi bảo trì:
 - **Chuỗi rỗng viết bằng dấu nháy kép** (`""`). Trong SQL chuẩn đó là tên cột;
   MySQL bật `ANSI_QUOTES` sẽ báo lỗi. Đã đổi hết sang `''`
 
+Ngoài ra:
+
+- `tests/dev-server.php` (bộ định tuyến cho máy chủ chạy thử ở máy cá nhân)
+  chặn `data|app|tests` nhưng **thiếu `tools`**, không khớp với `.htaccess`.
+  Không ảnh hưởng máy chủ thật vì `.htaccess` vẫn chặn, và bản thân công cụ
+  cũng có chốt `PHP_SAPI`; nhưng đã bổ sung cho hai danh sách khớp nhau
+
 ### Thay đổi
 
 - `COLLATE NOCASE` khi sắp theo mã đổi thành `LOWER()` — cả hai loại cơ sở dữ
@@ -122,14 +129,21 @@ có thể tái diễn khi bảo trì:
   bộ nhớ, nên thêm cột một bên mà quên bên kia là biết ngay
 - `tests/run_all.php` thêm cờ `--mysql`, lấy thông tin kết nối từ biến môi
   trường `RUTGON_TEST_DB_*`
-- Tổng: **268 hạng mục, 0 lỗi** trên cả hai loại cơ sở dữ liệu (trước: 201)
+- Thêm 4 hạng mục canh danh sách chặn của bộ định tuyến chạy thử
+  (`/data/`, `/app/`, `/tests/`, `/tools/`). Hạng mục đòi đúng **thông báo của
+  bộ định tuyến** chứ không chỉ đòi mã 403, vì riêng `/tools/` còn có chốt
+  `PHP_SAPI` bên trong tệp cũng trả 403 — chỉ xét mã trạng thái thì bỏ danh
+  sách chặn đi mà hạng mục vẫn "đạt"
+- Tổng: **272 hạng mục, 0 lỗi** trên cả hai loại cơ sở dữ liệu (trước: 201)
 
 ### Tài liệu
 
 - Hướng dẫn cài đặt: mục mới **Dùng MySQL thay cho SQLite** — bảng so sánh nên
-  dùng loại nào, cách cài mới, cách chuyển từ SQLite sang (kèm sơ đồ), ba cách
-  chạy công cụ trên hosting (cPanel Terminal / Cron Jobs / SSH), và 7 mục xử
-  lý sự cố MySQL
+  dùng loại nào, **Cách 1** cài mới dùng MySQL ngay từ đầu (không cần dòng
+  lệnh), **Cách 2** chuyển từ SQLite sang (kèm sơ đồ), ba cách chạy công cụ
+  trên hosting (cPanel Terminal / Cron Jobs / SSH), và 7 mục xử lý sự cố MySQL
+- `CAI-DAT-NHANH.txt` trong bản `.zip` thêm hẳn quy trình cài mới dùng MySQL
+  gồm 5 bước, để không phải mở tài liệu đầy đủ mới cài được
 - Quy trình kỹ thuật: mục mới **§3b Hai loại cơ sở dữ liệu** — sơ đồ lớp
   `Database`, bảng đối chiếu hai bản cấu trúc, giải thích vì sao mốc thời gian
   dùng `VARCHAR` chứ không dùng `DATETIME`, bốn cái bẫy tương thích, và sơ đồ

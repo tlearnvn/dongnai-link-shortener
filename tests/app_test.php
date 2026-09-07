@@ -135,6 +135,27 @@ $notFound = request('/duong-dan-khong-ton-tai-abc123');
 check('Mã không tồn tại trả về 404', $notFound['status'] === 404, 'nhận ' . $notFound['status']);
 check('Trang 404 có thông báo tiếng Việt', str_contains($notFound['body'], 'không tồn tại'));
 
+// Bốn thư mục này phải bị chặn ngay ở tầng định tuyến. Danh sách trong
+// tests/dev-server.php và trong .htaccess ở thư mục gốc phải khớp nhau.
+//
+// Kiểm chặt tới mức đòi đúng thông báo của bộ định tuyến, chứ không chỉ đòi
+// mã 403: riêng /tools/ còn có chốt PHP_SAPI bên trong tệp cũng trả về 403,
+// nên nếu chỉ xét mã trạng thái thì bỏ danh sách chặn ra khỏi bộ định tuyến
+// mà hạng mục vẫn "đạt". Với /data/ và /tests/ thì tầng định tuyến là lớp
+// duy nhất: hở ra là tải được tệp cơ sở dữ liệu, hoặc chạy được bộ kiểm định.
+$thongBaoDinhTuyen = 'Không có quyền truy cập';
+foreach ([
+    '/data/rutgon.sqlite' => 'tệp cơ sở dữ liệu',
+    '/app/config.php' => 'tệp cấu hình',
+    '/tests/app_test.php' => 'bộ kiểm định',
+    '/tools/chuyen-doi-csdl.php' => 'công cụ dòng lệnh',
+] as $path => $label) {
+    $blocked = request($path);
+    check("Bộ định tuyến chặn {$label} ({$path})",
+        $blocked['status'] === 403 && str_contains($blocked['body'], $thongBaoDinhTuyen),
+        'nhận ' . $blocked['status'] . ', nội dung: ' . trim(substr($blocked['body'], 0, 60)));
+}
+
 // ---------------------------------------------------------------------------
 section('2. Khách rút gọn liên kết với tên tuỳ chọn');
 

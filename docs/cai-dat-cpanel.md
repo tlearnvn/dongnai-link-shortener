@@ -374,6 +374,13 @@ Hệ thống chạy được trên hai loại cơ sở dữ liệu. Mặc địn
 tệp duy nhất, không cần cài gì. Đổi sang **MySQL / MariaDB** lúc nào cũng
 được, và giữ nguyên toàn bộ dữ liệu đang có.
 
+Mục này có hai đường, đọc đúng một đường là đủ:
+
+| Bạn đang… | Đọc |
+|---|---|
+| **Cài mới**, muốn dùng MySQL ngay từ đầu | [Cách 1](#cách-1--cài-mới-dùng-mysql-ngay-từ-đầu) — khoảng 10 phút, không cần dòng lệnh |
+| Đã chạy SQLite, muốn đổi sang MySQL | [Cách 2](#cách-2--đang-dùng-sqlite-chuyển-sang-mysql) — cần chạy một lệnh từ Terminal/Cron |
+
 ### Nên dùng loại nào
 
 | | SQLite (mặc định) | MySQL / MariaDB |
@@ -431,8 +438,31 @@ return [
 > `db_host` trên cPanel gần như luôn là `localhost`. Chỉ khi nhà cung cấp ghi
 > rõ một địa chỉ khác (kiểu `mysql.tenhosting.vn`) thì mới thay.
 
-**D. Mở trang chủ** — hệ thống tự tạo 7 bảng rồi hiện trang rút gọn. Tiếp tục
-từ [Bước 6](#bước-6--tạo-tài-khoản-quản-trị).
+**D. Mở trang chủ.** Hệ thống tự tạo **7 bảng** (`users`, `links`, `clicks`,
+`settings`, `remember_tokens`, `login_attempts`, `audit_log`) ngay ở lần truy
+cập đầu tiên rồi hiện trang rút gọn. **Không phải chạy tệp `.sql` nào**, không
+phải nhập gì vào phpMyAdmin.
+
+**E. Tạo tài khoản** — như [Bước 6](#bước-6--tạo-tài-khoản-quản-trị): người
+đăng ký **đầu tiên** tự động thành quản trị viên, và **nhớ lưu mã dự phòng**.
+
+**F. Kiểm tra.** Ngoài [Bước 7](#bước-7--kiểm-tra-sau-khi-cài), kiểm thêm ba
+mục riêng của MySQL:
+
+| Kiểm | Kết quả đúng |
+|---|---|
+| phpMyAdmin → chọn cơ sở dữ liệu | Thấy **7 bảng**, bảng `users` có 1 dòng |
+| `/quan-tri/cai-dat` → *Thông tin kỹ thuật* | **Loại cơ sở dữ liệu: MySQL / MariaDB**, kèm phiên bản máy chủ |
+| Mở `ten-mien.vn/app/config.local.php` | **403 Forbidden** — tệp này chứa mật khẩu cơ sở dữ liệu, bắt buộc phải chặn được |
+
+Tiêu đề liên kết có dấu tiếng Việt phải hiện đúng ngay từ đầu. Nếu ra dấu hỏi
+hoặc ô vuông thì cơ sở dữ liệu không phải `utf8mb4` — xoá đi tạo lại với
+**Collation** `utf8mb4_unicode_ci`.
+
+> **Thư mục `data/` vẫn cần quyền ghi**, dù dùng MySQL — hệ thống ghi
+> `error.log` vào đó. Nhưng nếu hosting khoá hẳn không cho ghi thì hệ thống
+> **vẫn chạy được** (chỉ mất nhật ký lỗi); còn với SQLite thì không chạy nổi.
+> Đây là một lý do để chọn MySQL trên hosting khó tính.
 
 ### Cách 2 — Đang dùng SQLite, chuyển sang MySQL
 

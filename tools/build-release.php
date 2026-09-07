@@ -298,19 +298,63 @@ function quickStart(string $version): string
     ----------------------------------------------------------------
     SAO LUU
 
-    Toan bo du lieu nam trong MOT tep: data/rutgon.sqlite
-    Sao luu = chep thu muc data/ (nen chep ca tep -wal, -shm neu co).
+    Neu dung SQLITE (mac dinh):
+      Toan bo du lieu nam trong MOT tep: data/rutgon.sqlite
+      Sao luu = chep thu muc data/ (chep ca tep -wal, -shm neu co).
+
+    Neu dung MYSQL:
+      cPanel -> Backup -> Download a MySQL Database Backup
+      hoac phpMyAdmin -> Export -> SQL
+      NHO SAO LUU CA TEP app/config.local.php - khong co no thi
+      ban sao co so du lieu vo dung vi mat thong tin ket noi.
+
     Nen sao luu moi tuan va TRUOC MOI LAN NANG CAP.
 
     ----------------------------------------------------------------
     MUON DUNG MYSQL THAY CHO SQLITE ?
 
     Khong bat buoc. SQLite du dung cho hau het truong hop va sao
-    luu de hon nhieu. Doi sang MySQL khi hosting gioi han dung
-    luong thu muc, hoac nhieu nguoi tao lien ket cung luc.
+    luu de hon nhieu (chi chep mot tep). Chon MySQL khi hosting
+    gioi han dung luong thu muc, khong cho ghi vao data/, hoac
+    nhieu nguoi trong Phong tao lien ket cung luc.
 
-    Doi luc nao cung duoc va GIU NGUYEN toan bo du lieu:
-    lien ket ngan va ma QR da in ra van dung binh thuong.
+    CAI MOI, DUNG MYSQL NGAY TU DAU (~10 phut, khong can dong lenh)
+
+    1. cPanel -> MySQL Databases
+       - Create New Database: dat ten, vi du "rutgon"
+         (cPanel tu them tien to -> tenhosting_rutgon, GHI LAI)
+       - Add New User: dat ten + mat khau, LUU MAT KHAU LAI
+       - Add User To Database: chon dung cap vua tao -> Add
+         -> tick ALL PRIVILEGES -> Make Changes
+       QUAN TRONG: Collation phai la utf8mb4_unicode_ci,
+       neu khong tieng Viet co dau se bi loi.
+
+    2. cPanel -> Select PHP Version -> Extensions
+       -> tick pdo_mysql -> Save
+
+    3. Tao tep app/config.local.php:
+
+         <?php
+         return [
+             'site_url'  => 'https://ten-mien-cua-ban.vn',
+             'db_driver' => 'mysql',
+             'db_host'   => 'localhost',
+             'db_name'   => 'tenhosting_rutgon',
+             'db_user'   => 'tenhosting_rutgon',
+             'db_pass'   => 'mat-khau-vua-tao',
+         ];
+
+    4. Mo trang chu. He thong TU TAO 7 bang.
+       Khong phai chay tep .sql nao, khong phai nhap gi
+       vao phpMyAdmin. Roi lam tiep tu buoc 5 o tren.
+
+    5. Kiem tra them: mo ten-mien.vn/app/config.local.php
+       -> PHAI bao 403. Tep nay chua mat khau co so du lieu.
+
+    DA CHAY SQLITE ROI, MUON DOI SANG MYSQL
+
+    Doi duoc va GIU NGUYEN toan bo du lieu: lien ket ngan va
+    ma QR da in ra van dung binh thuong.
 
       php tools/chuyen-doi-csdl.php --sang=mysql --thu   (xem truoc)
       php tools/chuyen-doi-csdl.php --sang=mysql         (chuyen that)

@@ -17,7 +17,8 @@ $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_P
 $file = $root . $path;
 
 // Không bao giờ phục vụ trực tiếp tệp dữ liệu hay mã nguồn.
-$blocked = preg_match('#^/(data|app|tests)/#', $path) === 1
+// Danh sách này phải khớp với .htaccess ở thư mục gốc.
+$blocked = preg_match('#^/(data|app|tests|tools)/#', $path) === 1
     || preg_match('/\.(sqlite|sqlite-wal|sqlite-shm|log)$/', $path) === 1;
 
 if ($blocked) {

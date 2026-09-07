@@ -949,11 +949,11 @@ flowchart TB
 
     subgraph srv["Cần máy chủ"]
         T3["qr_image_test.php — 10 hạng mục<br/>đọc ngược điểm ảnh PNG"]
-        T4["app_test.php — 120 hạng mục<br/>luồng sử dụng qua HTTP thật"]
+        T4["app_test.php — 124 hạng mục<br/>luồng sử dụng qua HTTP thật"]
     end
 
     SRV --> T3 --> T4 --> CHK{"Nhật ký lỗi<br/>máy chủ sạch ?"}
-    CHK -->|Có| PASS["268 hạng mục đạt · 0 lỗi<br/>số bằng nhau ở cả hai loại CSDL"]
+    CHK -->|Có| PASS["272 hạng mục đạt · 0 lỗi<br/>số bằng nhau ở cả hai loại CSDL"]
     CHK -->|Không| FAIL["In nhật ký lỗi ra"]
 
     style PASS fill:#dcfce7,stroke:#16a34a
