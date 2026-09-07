@@ -10,6 +10,33 @@ Mọi mốc thời gian theo **giờ Việt Nam (UTC+7)**.
 
 *Thiết kế bởi Trương Anh Tuấn.*
 
+![Trang chủ](docs/images/01-trang-chu.png)
+
+---
+
+## Tải về và cài đặt
+
+**[⬇ Tải bản phát hành mới nhất](https://github.com/tlearnvn/dongnai-link-shortener/releases/latest)**
+— tệp `.zip` đã đóng gói sẵn cho shared hosting, chỉ khoảng 200 KB.
+
+Giải nén vào `public_html`, cấp quyền ghi cho `data/`, mở trang chủ là dùng
+được. Chi tiết từng bước kèm ảnh: **[Cài đặt trên cPanel](docs/cai-dat-cpanel.md)**.
+
+> Bản `.zip` ở trang Releases **không chứa** thư mục `tests/` và các tệp chỉ
+> dùng khi phát triển, nên nhẹ và an toàn hơn nút “Download ZIP” ở trang chính.
+
+---
+
+## Tài liệu
+
+| Tài liệu | Dành cho | Nội dung |
+|---|---|---|
+| 📘 **[Hướng dẫn sử dụng](docs/huong-dan-su-dung.md)** | Cán bộ, giáo viên | 15 mục, 30 ảnh minh hoạ: rút gọn liên kết, tên tuỳ chọn, mã QR và cách in, đọc thống kê, mật khẩu và hẹn giờ, quản trị người dùng |
+| 🔧 **[Cài đặt trên cPanel](docs/cai-dat-cpanel.md)** | Người phụ trách hosting | 7 bước cài đặt, bật HTTPS, sao lưu tự động, nâng cấp, xử lý sự cố, danh sách kiểm tra khi bàn giao |
+| ⚙️ **[Quy trình kỹ thuật](docs/quy-trinh-ky-thuat.md)** | Quản trị, người bảo trì mã nguồn | 14 mục, 15 sơ đồ: kiến trúc, cơ sở dữ liệu, luồng xử lý, bộ tạo mã QR, phân quyền, xử lý UTC+7, bảo mật, kiểm định |
+| 📋 **[Lịch sử phiên bản](CHANGELOG.md)** | Ai cũng đọc được | Có gì mới, đã sửa lỗi gì, cần lưu ý gì khi nâng cấp |
+| 🗂 **[Mục lục tài liệu](docs/README.md)** | — | Bản đồ tra cứu nhanh theo việc cần làm |
+
 ---
 
 ## Mục lục
@@ -24,6 +51,7 @@ Mọi mốc thời gian theo **giờ Việt Nam (UTC+7)**.
 - [Cấu trúc thư mục](#cấu-trúc-thư-mục)
 - [API](#api)
 - [Ghi chú về quyền riêng tư](#ghi-chú-về-quyền-riêng-tư)
+- [Lịch sử phiên bản](CHANGELOG.md)
 
 ---
 
@@ -51,6 +79,9 @@ Mọi mốc thời gian theo **giờ Việt Nam (UTC+7)**.
   tính vào lượt nhấp.
 
 ### Mã QR
+
+![Trang mã QR](docs/images/12-ma-qr.png)
+
 - Bộ tạo mã QR **viết riêng bằng PHP thuần** (không thư viện ngoài):
   chế độ byte/UTF-8, phiên bản 1–40, đủ 4 mức sửa lỗi L/M/Q/H.
 - Xuất **PNG** (in giấy) và **SVG vector** (in băng-rôn, pa-nô khổ lớn).
@@ -58,6 +89,9 @@ Mọi mốc thời gian theo **giờ Việt Nam (UTC+7)**.
 - Mã mang dấu `?s=qr` để thống kê tách riêng lượt quét QR với lượt bấm liên kết.
 
 ### Thống kê
+
+![Thống kê một liên kết](docs/images/15-thong-ke-lien-ket.png)
+
 - Lượt nhấp theo ngày (7/14/30/90/365 ngày), theo giờ trong ngày, theo thứ
   trong tuần — tất cả theo giờ Việt Nam.
 - Số khách riêng biệt, lượt quét QR, lượt do robot.
@@ -292,8 +326,22 @@ Kết quả mong đợi: **201 hạng mục đạt, 0 lỗi**, nhật ký máy c
 │   ├── js/app.js           Tương tác (không bắt buộc để dùng hệ thống)
 │   └── img/favicon.svg
 ├── data/                   Tệp SQLite + nhật ký lỗi (đã chặn truy cập web)
-└── tests/                  Bộ kiểm định + máy chủ thử nghiệm
+├── docs/                   Tài liệu + 30 ảnh minh hoạ
+├── tests/                  Bộ kiểm định + máy chủ thử nghiệm
+├── tools/
+│   └── build-release.php   Đóng gói bản phát hành cho hosting
+├── CHANGELOG.md            Lịch sử phiên bản
+└── .gitattributes          Loại tệp dev khỏi bản tải tự động của GitHub
 ```
+
+Đóng gói bản phát hành mới:
+
+```bash
+php tools/build-release.php          # lấy số phiên bản từ CHANGELOG.md
+php tools/build-release.php 1.1.0    # hoặc chỉ định
+```
+
+Tệp `.zip` ra ở `dist/`, kèm tệp `.sha256` để đối chiếu.
 
 ---
 

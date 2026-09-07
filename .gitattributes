@@ -1,0 +1,41 @@
+# =============================================================================
+# Rút gọn link — Phòng GDPT-GDTX Sở GDĐT Đồng Nai
+# =============================================================================
+
+# --- Kết thúc dòng ----------------------------------------------------------
+# Chuẩn hoá LF trong kho lưu trữ, tránh lẫn CRLF khi làm việc trên Windows.
+* text=auto eol=lf
+
+*.php  text eol=lf
+*.css  text eol=lf
+*.js   text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+*.svg  text eol=lf
+.htaccess text eol=lf
+
+# Tệp nhị phân — không được sửa kết thúc dòng
+*.png binary
+*.jpg binary
+*.zip binary
+*.sqlite binary
+
+# --- Bản tải tự động của GitHub ---------------------------------------------
+# GitHub sinh sẵn tệp .zip / .tar.gz cho mỗi thẻ phiên bản. Những mục dưới
+# đây bị loại khỏi các bản đó, nên tải bản nào cũng dùng để triển khai được
+# ngay, không lẫn tệp chỉ dùng khi phát triển.
+#
+# Đặc biệt quan trọng: tests/ chứa mã PHP chạy được. Nếu người dùng giải nén
+# cả tests/ vào public_html mà máy chủ không đọc .htaccess thì người ngoài
+# gọi được /tests/app_test.php và bộ test sẽ tạo hàng loạt dữ liệu rác.
+
+tests/          export-ignore
+tools/          export-ignore
+dist/           export-ignore
+docs/images/    export-ignore
+.gitattributes  export-ignore
+.gitignore      export-ignore
+
+# --- Nhận diện ngôn ngữ trên trang GitHub -----------------------------------
+docs/*  linguist-documentation
+*.md    linguist-documentation

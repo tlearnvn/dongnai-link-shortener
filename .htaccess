@@ -1,6 +1,6 @@
 # =============================================================================
 # Rút gọn link — Phòng GDPT-GDTX Sở GDĐT Đồng Nai
-# Cấu hình cho máy chủ Apache
+# Cấu hình cho máy chủ Apache (dùng được trên shared hosting cPanel)
 # =============================================================================
 
 # Không liệt kê nội dung thư mục
@@ -9,12 +9,24 @@ Options -Indexes
 # Trang mặc định
 DirectoryIndex index.php
 
-# --- Định tuyến ---------------------------------------------------------------
-# Mọi đường dẫn không phải tệp/thư mục thật đều đưa về index.php để bộ định
-# tuyến xử lý. Không dùng RewriteBase để hệ thống chạy được cả khi đặt trong
-# thư mục con (ví dụ https://ten-mien.vn/rutgon/).
+# Mã hoá ký tự
+AddDefaultCharset UTF-8
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # --- 1. CHẶN TRƯỚC ------------------------------------------------------
+    # Phải đặt trước phần định tuyến: quy tắc định tuyến bên dưới có cờ [L],
+    # gặp tệp có thật là dừng ngay, nên nếu để phần chặn xuống dưới thì nó sẽ
+    # không bao giờ được xét. Bốn thư mục này chứa dữ liệu và mã nguồn, tuyệt
+    # đối không phục vụ qua web (tệp trong tests/ là mã PHP chạy được — để lộ
+    # thì người ngoài gọi được và tạo dữ liệu rác vào hệ thống thật).
+    RewriteRule ^(data|app|tests|tools)(/|$) - [F,L]
+
+    # --- 2. ĐỊNH TUYẾN ------------------------------------------------------
+    # Mọi đường dẫn không phải tệp/thư mục thật đều đưa về index.php.
+    # Không dùng RewriteBase để hệ thống chạy được cả khi đặt trong thư mục
+    # con (ví dụ https://ten-mien.vn/rutgon/).
 
     # Bỏ qua tệp và thư mục có thật (assets/css, assets/js…)
     RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -24,8 +36,20 @@ DirectoryIndex index.php
     RewriteRule ^ index.php [L]
 </IfModule>
 
-# --- Chặn truy cập trực tiếp vào dữ liệu và mã nguồn -------------------------
-<FilesMatch "\.(sqlite|sqlite3|db|log|sql|md)$">
+# --- Chặn theo phần mở rộng tệp ----------------------------------------------
+# Lớp bảo vệ thứ hai, có tác dụng cả khi máy chủ không bật mod_rewrite.
+<FilesMatch "\.(sqlite|sqlite3|sqlite-wal|sqlite-shm|db|log|sql|md|sh|json|lock|yml|yaml)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Không cho tải các tệp ẩn (.git, .env, .htaccess…)
+<FilesMatch "^\.">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
@@ -56,6 +80,3 @@ DirectoryIndex index.php
     Header always set X-Content-Type-Options "nosniff"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
-
-# --- Mã hoá ký tự ------------------------------------------------------------
-AddDefaultCharset UTF-8

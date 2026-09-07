@@ -1,0 +1,10 @@
+# Chặn mọi truy cập từ web vào thư mục kiểm định.
+# Các tệp test là mã PHP chạy được — nếu để lộ, người ngoài có thể gọi
+# /tests/app_test.php và tạo hàng loạt dữ liệu rác vào hệ thống thật.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
