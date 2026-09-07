@@ -596,7 +596,7 @@ lỗi L/M/Q/H.
 
 ```mermaid
 flowchart TD
-    IN["Nội dung<br/>https://rutgon.dongnai.edu.vn/tuyen-sinh-10?s=qr"] --> V
+    IN["Nội dung<br/>https://link.dongnaiedu.vn/tuyen-sinh-10?s=qr"] --> V
 
     V["1· Chọn phiên bản nhỏ nhất chứa đủ<br/>so nhu cầu bit với dung lượng từng phiên bản"] --> E
     E["2· Mã hoá dữ liệu<br/>0100 (chế độ byte) + số ký tự + dữ liệu<br/>+ ký hiệu kết thúc + đệm 0xEC/0x11"] --> B

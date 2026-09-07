@@ -7,7 +7,7 @@ declare(strict_types=1);
  * Muốn thay đổi mà không sửa tệp này, hãy tạo tệp app/config.local.php
  * trả về một mảng các khoá cần ghi đè. Ví dụ:
  *
- *   <?php return ['site_url' => 'https://rutgon.dongnai.edu.vn'];
+ *   <?php return ['site_url' => 'https://link.dongnaiedu.vn'];
  */
 
 $config = [

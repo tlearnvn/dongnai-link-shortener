@@ -214,7 +214,7 @@ máy chủ thật nên khai báo cứng để liên kết và mã QR luôn đún
 <?php
 // app/config.local.php
 return [
-    'site_url' => 'https://rutgon.dongnai.edu.vn',
+    'site_url' => 'https://link.dongnaiedu.vn',
 ];
 ```
 

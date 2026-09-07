@@ -33,7 +33,7 @@ MySQL.
 | Cần có | Ghi chú |
 |---|---|
 | Tài khoản cPanel | Của hosting hoặc do đơn vị cấp |
-| Tên miền hoặc tên miền con | Ví dụ `rutgon.dongnai.edu.vn` |
+| Tên miền hoặc tên miền con | Ví dụ `link.dongnaiedu.vn` |
 | PHP 8.1 trở lên | Đổi được trong cPanel, xem Bước 2 |
 | Phần mở rộng `pdo_sqlite` | Hầu hết hosting đã bật sẵn |
 | Phần mở rộng `mbstring` | Hầu hết hosting đã bật sẵn |
@@ -143,9 +143,9 @@ CHANGELOG.md
 
 1. cPanel → **File Manager**
 2. Vào thư mục `public_html`
-   - Nếu dùng **tên miền con** (ví dụ `rutgon.dongnai.edu.vn`), vào thư mục
+   - Nếu dùng **tên miền con** (ví dụ `link.dongnaiedu.vn`), vào thư mục
      tương ứng của tên miền con đó, thường là `public_html/rutgon` hoặc
-     `rutgon.dongnai.edu.vn` — xem ở cPanel → **Domains**
+     `link.dongnaiedu.vn` — xem ở cPanel → **Domains**
 3. Bấm **Upload**, chọn tệp `rutgon-link-v1.0.0.zip`
 4. Xong thì về File Manager, **chuột phải** vào tệp zip → **Extract**
 5. Giải nén vào **chính thư mục đó** (không tạo thêm thư mục con)
@@ -206,7 +206,7 @@ Cách đặt:
 ```php
 <?php
 return [
-    'site_url' => 'https://rutgon.dongnai.edu.vn',
+    'site_url' => 'https://link.dongnaiedu.vn',
 ];
 ```
 
@@ -217,7 +217,7 @@ Vài lưu ý:
 - Dùng `https://` nếu website đã có SSL (xem [Bật HTTPS](#bật-https))
 - Không cần dấu `/` ở cuối, có cũng được — hệ thống tự bỏ
 - Nếu cài vào thư mục con, ghi cả thư mục con:
-  `'site_url' => 'https://dongnai.edu.vn/rutgon'`
+  `'site_url' => 'https://dongnaiedu.vn/rutgon'`
 - Tệp này **không bị ghi đè** khi nâng cấp bản mới
 
 Tệp `config.local.php` cũng là nơi đổi các cấu hình khác. Xem bảng đầy đủ
@@ -226,7 +226,7 @@ trong [README](../README.md#cấu-hình). Ví dụ:
 ```php
 <?php
 return [
-    'site_url' => 'https://rutgon.dongnai.edu.vn',
+    'site_url' => 'https://link.dongnaiedu.vn',
     'guest_hourly_limit' => 5,        // khách chỉ tạo 5 liên kết/giờ
     'code_length' => 7,               // mã tự sinh dài 7 ký tự
     'click_retention_days' => 730,    // tự xoá chi tiết lượt nhấp cũ hơn 2 năm
@@ -292,20 +292,20 @@ Xong phần kiểm tra, nhớ **xoá liên kết thử** `kiem-tra`.
 ## Cài vào thư mục con
 
 Hệ thống chạy được khi đặt trong thư mục con, ví dụ
-`https://dongnai.edu.vn/rutgon/`.
+`https://dongnaiedu.vn/rutgon/`.
 
 1. Giải nén vào `public_html/rutgon`
 2. Đặt `site_url` **có cả thư mục con**:
 
 ```php
 <?php
-return ['site_url' => 'https://dongnai.edu.vn/rutgon'];
+return ['site_url' => 'https://dongnaiedu.vn/rutgon'];
 ```
 
-Liên kết rút gọn sẽ có dạng `dongnai.edu.vn/rutgon/tuyen-sinh-10`.
+Liên kết rút gọn sẽ có dạng `dongnaiedu.vn/rutgon/tuyen-sinh-10`.
 
 > Liên kết dài hơn một chút. Nếu định in mã QR nhiều, nên xin **tên miền
-> con riêng** (`rutgon.dongnai.edu.vn`) để liên kết ngắn gọn hơn.
+> con riêng** (`link.dongnaiedu.vn`) để liên kết ngắn gọn hơn.
 
 ---
 
@@ -678,7 +678,7 @@ Cách xử lý:
    ```php
    <?php
    return [
-       'site_url' => 'https://rutgon.dongnai.edu.vn',
+       'site_url' => 'https://link.dongnaiedu.vn',
        'db_path'  => '/home/TEN_TAI_KHOAN/rutgon-data/rutgon.sqlite',
    ];
    ```

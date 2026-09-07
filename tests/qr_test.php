@@ -139,7 +139,7 @@ check('Ngưỡng dung lượng byte mode khớp bảng chuẩn (20 mốc)', $cap
 // 3. Cấu trúc ma trận
 // ---------------------------------------------------------------------------
 section('3. Cấu trúc ma trận');
-$qr = QrCode::encode('https://rutgon.dongnai.edu.vn/abc123', QrCode::ECC_MEDIUM);
+$qr = QrCode::encode('https://link.dongnaiedu.vn/abc123', QrCode::ECC_MEDIUM);
 $size = $qr->size();
 check('Kích thước V' . $qr->version() . ' = ' . $size . ' module', $size === $qr->version() * 4 + 17);
 
@@ -183,7 +183,7 @@ check('Module luôn tối tại (8, size-8)', $qr->isDark(8, $size - 8));
 section('4. Giải mã ngược ma trận về chuỗi gốc');
 $samples = [
     'ngắn' => 'A',
-    'URL rút gọn' => 'https://rutgon.dongnai.edu.vn/hoi-thao',
+    'URL rút gọn' => 'https://link.dongnaiedu.vn/hoi-thao',
     'URL dài' => 'https://sgddt.dongnai.gov.vn/pages/tin-tuc.aspx?id=12345&loai=thong-bao&nam=2026',
     'tiếng Việt có dấu' => 'Sở Giáo dục và Đào tạo Đồng Nai — Phòng GDPT-GDTX ✅',
     '1 byte biên' => str_repeat('Z', 17),

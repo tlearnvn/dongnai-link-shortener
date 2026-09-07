@@ -115,8 +115,9 @@ Toàn bộ ảnh minh hoạ nằm trong [`images/`](images) — 36 ảnh chụp 
 | Phạm vi dữ liệu | `31-quan-tri-tat-ca-lien-ket` · `32-bang-dieu-khien-tat-ca` · `33-thong-ke-tat-ca` · `34-nguoi-dung-thuong-chi-thay-cua-minh` · `35-nguoi-dung-thuong-bi-chan` |
 | Cơ sở dữ liệu | `36-quan-tri-mysql` |
 
-> Ảnh chụp dùng tên miền ví dụ `rutgon.dongnai.edu.vn` và **dữ liệu mẫu** —
-> không phải số liệu thật của đơn vị.
+> Ảnh chụp dùng tên miền thật của hệ thống (`link.dongnaiedu.vn`) nhưng
+> **dữ liệu là dữ liệu mẫu** — không phải liên kết và số liệu thật của đơn vị.
+> Dựng lại đúng bộ dữ liệu đó bằng `php tools/tao-du-lieu-mau.php`.
 
 ---
 

@@ -96,15 +96,15 @@ echo "\033[1mKiểm định nhận diện đường dẫn\033[0m\n\n";
 // --- 1. Đặt ngay gốc tên miền ---------------------------------------------
 echo "\033[1m1. Ngay gốc tên miền\033[0m\n";
 $root = inScenario([
-    'HTTP_HOST' => 'rutgon.dongnai.edu.vn',
+    'HTTP_HOST' => 'link.dongnaiedu.vn',
     'SCRIPT_NAME' => '/index.php',
     'REQUEST_URI' => '/tuyen-sinh-2026',
     'HTTPS' => 'on',
 ]);
-check('Địa chỉ gốc đúng', $root['base'] === 'https://rutgon.dongnai.edu.vn', $root['base']);
+check('Địa chỉ gốc đúng', $root['base'] === 'https://link.dongnaiedu.vn', $root['base']);
 check('Đường dẫn nhận ra đúng mã', $root['path'] === '/tuyen-sinh-2026', $root['path']);
-check('Liên kết nội bộ đúng', $root['url'] === 'https://rutgon.dongnai.edu.vn/lien-ket', $root['url']);
-check('Liên kết rút gọn đúng', $root['short'] === 'https://rutgon.dongnai.edu.vn/tuyen-sinh', $root['short']);
+check('Liên kết nội bộ đúng', $root['url'] === 'https://link.dongnaiedu.vn/lien-ket', $root['url']);
+check('Liên kết rút gọn đúng', $root['short'] === 'https://link.dongnaiedu.vn/tuyen-sinh', $root['short']);
 
 // --- 2. Đặt trong thư mục con ---------------------------------------------
 echo "\n\033[1m2. Trong thư mục con /rutgon\033[0m\n";
@@ -197,7 +197,7 @@ check('Lọc ký tự lạ trong header Host',
 
 // --- 5. Khi đã khai báo site_url thì phải dùng đúng giá trị đó ------------
 echo "\n\033[1m5. Khai báo site_url trong cấu hình\033[0m\n";
-file_put_contents($configFile, '<?php return ["site_url" => "https://rutgon.dongnai.edu.vn/"];');
+file_put_contents($configFile, '<?php return ["site_url" => "https://link.dongnaiedu.vn/"];');
 
 $configured = inScenario([
     'HTTP_HOST' => 'may-chu-noi-bo.local',
@@ -205,9 +205,9 @@ $configured = inScenario([
     'REQUEST_URI' => '/tuyen-sinh',
 ]);
 check('Ưu tiên site_url trong cấu hình, bỏ qua header Host',
-    $configured['base'] === 'https://rutgon.dongnai.edu.vn', $configured['base']);
+    $configured['base'] === 'https://link.dongnaiedu.vn', $configured['base']);
 check('Bỏ dấu / thừa ở cuối site_url',
-    $configured['short'] === 'https://rutgon.dongnai.edu.vn/tuyen-sinh', $configured['short']);
+    $configured['short'] === 'https://link.dongnaiedu.vn/tuyen-sinh', $configured['short']);
 
 $restoreConfig();
 

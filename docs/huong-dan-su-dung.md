@@ -36,7 +36,7 @@ bao nhiêu người.
 
 | Trước | Sau |
 |---|---|
-| `https://sgddt.dongnai.gov.vn/thong-bao/tuyen-sinh-lop-10-nam-hoc-2026-2027.pdf` | `rutgon.dongnai.edu.vn/tuyen-sinh-10` |
+| `https://sgddt.dongnai.gov.vn/thong-bao/tuyen-sinh-lop-10-nam-hoc-2026-2027.pdf` | `link.dongnaiedu.vn/tuyen-sinh-10` |
 
 Ba lợi ích thực tế:
 
@@ -88,11 +88,11 @@ Trên trang này bạn có thể:
 ## 3. Đặt tên tuỳ chọn
 
 Đây là tính năng đáng dùng nhất. Thay vì để hệ thống sinh mã ngẫu nhiên như
-`rutgon.dongnai.edu.vn/k7Bq2x`, bạn tự đặt tên cho dễ nhớ:
+`link.dongnaiedu.vn/k7Bq2x`, bạn tự đặt tên cho dễ nhớ:
 
-- `rutgon.dongnai.edu.vn/tuyen-sinh-10`
-- `rutgon.dongnai.edu.vn/lich-thi-hk1`
-- `rutgon.dongnai.edu.vn/bieu-mau-2026`
+- `link.dongnaiedu.vn/tuyen-sinh-10`
+- `link.dongnaiedu.vn/lich-thi-hk1`
+- `link.dongnaiedu.vn/bieu-mau-2026`
 
 Hệ thống **kiểm tra ngay khi bạn gõ**. Tên còn trống thì hiện dấu xanh:
 
@@ -246,7 +246,7 @@ Thêm `/xem/` trước tên bất kỳ để xem liên kết dẫn tới đâu *
 vào lượt nhấp**:
 
 ```
-rutgon.dongnai.edu.vn/xem/tuyen-sinh-10
+link.dongnaiedu.vn/xem/tuyen-sinh-10
 ```
 
 ![Trang xem trước](images/05-xem-truoc.png)
@@ -734,7 +734,7 @@ QR dùng trực tiếp.
 1. Tạo liên kết với tên theo số công văn: `cv-1234`
 2. Vào **Mã QR** → chọn mức sửa lỗi **M** → **Tải ảnh PNG** (kích thước ô 10–12)
 3. Chèn vào Word, đặt ở góc dưới bên phải, kích thước khoảng 2,5 × 2,5 cm
-4. Ghi kèm dòng chữ: *Quét mã hoặc truy cập `rutgon.dongnai.edu.vn/cv-1234`*
+4. Ghi kèm dòng chữ: *Quét mã hoặc truy cập `link.dongnaiedu.vn/cv-1234`*
 
 Ghi cả liên kết chữ bên dưới mã QR để người không quét được vẫn gõ tay được.
 

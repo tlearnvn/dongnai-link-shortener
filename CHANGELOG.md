@@ -155,6 +155,13 @@ Ngoài ra:
   lưu**, còn `audit_log.ip` và `links.creator_ip` là IP của người đăng nhập /
   người tạo liên kết
 - 24 sơ đồ Mermaid (trước: 20), 36 ảnh minh hoạ (trước: 30)
+- **Chụp lại toàn bộ 36 ảnh minh hoạ theo tên miền thật `link.dongnaiedu.vn`**,
+  và đổi tên miền trong mọi ví dụ ở tài liệu, `app/config.php` và bộ kiểm định
+- Năm ảnh trước đây chụp theo **toạ độ cắt cố định** giờ chụp theo **phần tử**
+  (`02`, `03`, `04`, `09`, `13`, `16`). Toạ độ cứng đã cắt mất phần quan trọng:
+  ảnh `09` mất cả hàng nút thao tác dù chú thích ghi "có đủ nút thao tác", ảnh
+  `16` mất tiêu đề biểu đồ và đỉnh đường cong. Chụp theo phần tử thì bố cục hay
+  tên miền đổi thế nào cũng lấy đúng trọn khối
 
 ---
 
