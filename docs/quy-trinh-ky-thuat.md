@@ -533,6 +533,94 @@ Hai chốt an toàn ở khu quản trị:
 - Quản trị viên **không thể tự** hạ quyền, tự khoá hoặc tự xoá tài khoản mình.
 - Hệ thống luôn giữ **ít nhất một** quản trị viên.
 
+### Phạm vi dữ liệu đọc được
+
+Quyền admin không chỉ mở thêm trang, mà còn **mở rộng phạm vi truy vấn** của
+những trang sẵn có. Cơ chế chỉ nằm ở một dòng, lặp lại ở hai controller:
+
+```php
+// app/controllers/DashboardController.php, StatsController.php
+$scope = input('pham-vi') === 'tat-ca' && $isAdmin ? null : $userId;
+```
+
+`$scope === null` được các hàm trong `Stats::` hiểu là *không lọc theo chủ sở
+hữu* — tức là toàn hệ thống. Người dùng thường có gắn `?pham-vi=tat-ca` cũng
+vô ích, vì `&& $isAdmin` chặn lại.
+
+| Nguồn dữ liệu | Người dùng thường | Quản trị viên |
+|---|---|---|
+| `/lien-ket`, `/bang-dieu-khien`, `/thong-ke` | Chỉ `links.user_id = mình` | Mặc định vẫn là của mình; thêm `?pham-vi=tat-ca` thì bỏ điều kiện lọc |
+| `/quan-tri/lien-ket` | 403 | Mọi liên kết, kèm `users.username` của chủ sở hữu |
+| `/quan-tri/nguoi-dung`, `/quan-tri/nhat-ky` | 403 | Toàn bộ bảng `users`, `audit_log` |
+| `/xuat-csv` | Chỉ của mình | `?pham-vi=tat-ca` → toàn bộ |
+| Thao tác trên một liên kết cụ thể | `link.user_id = mình` | `LinkService::canManage()` trả `true` với mọi liên kết |
+
+### Những gì không ai đọc được
+
+Ba nhóm dữ liệu chỉ tồn tại ở dạng băm một chiều, nên **không có đường đọc
+ngược** — kể cả khi mở trực tiếp tệp SQLite:
+
+| Cột | Cách lưu |
+|---|---|
+| `users.password_hash` | `password_hash()`, bcrypt/argon2 tuỳ PHP |
+| `users.recovery_code_hash` | `password_hash()` |
+| `links.password_hash` | `password_hash()` |
+
+Còn địa chỉ IP thì phân biệt rõ hai loại:
+
+| Ai | Có lưu IP | Ghi chú |
+|---|---|---|
+| Người **nhấp** liên kết ngắn | **Không** | `clicks.visitor_hash` = `substr(sha256(ip . '|' . ua . '|' . salt), 0, 32)`. Không có cột IP nào trong bảng `clicks` |
+| Người **đăng nhập** tạo/sửa dữ liệu | Có | `audit_log.ip` — hiện ở `/quan-tri/nhat-ky` |
+| Khách chưa đăng nhập tạo liên kết | Có | `links.creator_ip` — chỉ dùng để giới hạn số liên kết mỗi ngày, **không hiện ở bất cứ view nào** |
+
+Nghĩa là thống kê đủ để trả lời *"bao nhiêu lượt, thiết bị gì, lúc nào, từ
+nguồn nào"* nhưng không đủ để truy ra *một cá nhân cụ thể đã nhấp*.
+
+### Truy cập thô bằng công cụ SQLite
+
+Người giữ máy chủ mở được `data/rutgon.sqlite` bằng
+[DB Browser for SQLite](https://sqlitebrowser.org/) và đọc mọi bảng. Đây là
+đặc tính của kiến trúc một tệp, không phải lỗ hổng — nhưng kéo theo hai hệ quả
+cần nhớ khi bảo trì:
+
+- Tệp dữ liệu **phải** nằm ngoài đường tải công khai. `.htaccess` chặn
+  `/data/`; nếu máy chủ không đọc `.htaccess`, phải chuyển `db_path` ra ngoài
+  `public_html` (xem `docs/cai-dat-cpanel.md`).
+- Bản sao lưu tệp `.sqlite` chứa **toàn bộ** dữ liệu hệ thống. Cất giữ như tài
+  liệu nội bộ, đừng để trong thư mục dùng chung.
+- Cột `users.api_token` lưu **nguyên văn** (phải so khớp được với khoá người
+  dùng gửi lên). Ai đọc được tệp dữ liệu là tạo được liên kết dưới tên người
+  khác qua API. Đây là lý do nữa để tệp dữ liệu không bao giờ nằm trong đường
+  tải công khai.
+
+### Dựng dữ liệu mẫu để xem thử
+
+Muốn nhìn thấy đủ các trang có số liệu (biểu đồ, bảng xếp hạng, khu quản trị)
+trước khi đưa vào dùng thật:
+
+```bash
+php tools/tao-du-lieu-mau.php
+```
+
+Công cụ sinh 2 tài khoản (một quản trị, một người dùng thường), 8 liên kết
+thuộc **hai** chủ sở hữu khác nhau và khoảng 900 lượt nhấp rải trong 30 ngày.
+Đây cũng chính là bộ dữ liệu dùng để chụp ảnh minh hoạ trong
+`docs/huong-dan-su-dung.md`.
+
+Ba chốt an toàn của công cụ:
+
+| Chốt | Cách làm |
+|---|---|
+| Không chạy được từ web | `if (PHP_SAPI !== 'cli')` → 403; thêm nữa `tools/` bị `.htaccess` chặn |
+| Không phá dữ liệu thật | Đếm `users` và `links`, có dữ liệu là dừng, phải thêm `--force` mới ghi đè |
+| Không lọt vào bản phát hành | `tools/` nằm trong `$exclude` của `build-release.php` **và** `export-ignore` của `.gitattributes` — nên bản .zip lẫn bản tải từ thẻ GitHub đều không có tài khoản mật khẩu công khai |
+
+Công cụ cũng đặt dải thông báo đầu trang *"Đây là DỮ LIỆU MẪU…"* để không ai
+nhầm dữ liệu thử với dữ liệu thật. Xoá dữ liệu mẫu bằng cách xoá tệp
+`data/rutgon.sqlite` rồi mở lại trang chủ — hệ thống tự tạo cơ sở dữ liệu
+trắng.
+
 ---
 
 ## 9. Xử lý thời gian UTC+7

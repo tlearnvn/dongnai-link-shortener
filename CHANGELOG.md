@@ -26,6 +26,29 @@ Nhóm thay đổi dùng các nhãn: **Thêm mới**, **Thay đổi**, **Đã s�
 
 ---
 
+## [Chưa phát hành]
+
+### Thêm mới
+
+- Công cụ dựng dữ liệu mẫu `tools/tao-du-lieu-mau.php`: 2 tài khoản, 8 liên
+  kết thuộc hai chủ sở hữu, khoảng 900 lượt nhấp rải trong 30 ngày — để xem
+  thử, tập huấn hoặc trình bày. Chỉ chạy được từ dòng lệnh, tự dừng nếu cơ sở
+  dữ liệu đã có dữ liệu, và không nằm trong bản phát hành
+
+### Tài liệu
+
+- Hướng dẫn sử dụng: thêm mục **Xem toàn bộ dữ liệu của mọi người**,
+  **Người dùng thường thấy gì** và **Quản trị viên *không* xem được gì**, kèm
+  5 ảnh minh hoạ mới (`31`–`35`)
+- Quy trình kỹ thuật: thêm mục **Phạm vi dữ liệu đọc được**,
+  **Những gì không ai đọc được**, **Truy cập thô bằng công cụ SQLite** và
+  **Dựng dữ liệu mẫu để xem thử**
+- Ghi rõ ba chỗ liên quan tới địa chỉ IP: IP người nhấp liên kết **không được
+  lưu**, còn `audit_log.ip` và `links.creator_ip` là IP của người đăng nhập /
+  người tạo liên kết
+
+---
+
 ## [1.0.0] — 2026-09-07
 
 Bản phát hành đầu tiên. Hệ thống hoàn chỉnh, đã kiểm định **201 hạng mục,

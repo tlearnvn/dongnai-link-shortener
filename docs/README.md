@@ -91,8 +91,9 @@ flowchart TB
 
 ## Thư mục ảnh
 
-Toàn bộ ảnh minh hoạ nằm trong [`images/`](images) — 30 ảnh chụp từ hệ thống
-đang chạy thật, dữ liệu mẫu mô phỏng công việc của Sở.
+Toàn bộ ảnh minh hoạ nằm trong [`images/`](images) — 35 ảnh chụp từ hệ thống
+đang chạy thật, dữ liệu mẫu mô phỏng công việc của Sở. Dựng lại đúng bộ dữ liệu
+đó bằng `php tools/tao-du-lieu-mau.php`.
 
 | Nhóm | Ảnh |
 |---|---|
@@ -104,6 +105,7 @@ Toàn bộ ảnh minh hoạ nằm trong [`images/`](images) — 30 ảnh chụp 
 | Quản trị | `21-quan-tri` · `22-quan-tri-nguoi-dung` · `23-quan-tri-cai-dat` · `24-nhat-ky` |
 | Trạng thái liên kết | `25-lien-ket-co-mat-khau` · `26-lien-ket-tam-dung` |
 | Giao diện | `27-giao-dien-toi` · `28-thong-ke-toi` · `29-dien-thoai-trang-chu` · `30-dien-thoai-bang-dieu-khien` |
+| Phạm vi dữ liệu | `31-quan-tri-tat-ca-lien-ket` · `32-bang-dieu-khien-tat-ca` · `33-thong-ke-tat-ca` · `34-nguoi-dung-thuong-chi-thay-cua-minh` · `35-nguoi-dung-thuong-bi-chan` |
 
 > Ảnh chụp dùng tên miền ví dụ `rutgon.dongnai.edu.vn` và **dữ liệu mẫu** —
 > không phải số liệu thật của đơn vị.

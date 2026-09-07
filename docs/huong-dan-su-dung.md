@@ -486,6 +486,10 @@ Giao diện để lưu lựa chọn cho mọi thiết bị.
 
 ![Giao diện tối](images/27-giao-dien-toi.png)
 
+Biểu đồ và bảng thống kê cũng đổi màu theo:
+
+![Thống kê ở giao diện tối](images/28-thong-ke-toi.png)
+
 ### Dùng trên điện thoại
 
 Toàn bộ hệ thống dùng được trên điện thoại:
@@ -503,6 +507,76 @@ Người dùng **đầu tiên** của hệ thống tự động là quản trị
 trị** chỉ hiện với tài khoản có quyền này.
 
 ![Trang quản trị](images/21-quan-tri.png)
+
+### Xem toàn bộ dữ liệu của mọi người
+
+Quản trị viên xem được **tất cả** liên kết và số liệu của mọi tài khoản, không
+riêng gì của mình.
+
+| Địa chỉ | Xem được gì |
+|---|---|
+| `/quan-tri` | Tổng quan toàn hệ thống: số tài khoản, số liên kết, số lượt nhấp, dung lượng tệp dữ liệu |
+| `/quan-tri/lien-ket` | **Tất cả liên kết của mọi người**, kèm tên chủ sở hữu. Lọc / tìm / sắp xếp như trang liên kết thường |
+| `/quan-tri/nguoi-dung` | Danh sách tài khoản: quyền, số liên kết, lần đăng nhập gần nhất |
+| `/quan-tri/nhat-ky` | Nhật ký ai làm gì, lúc nào |
+| `/bang-dieu-khien?pham-vi=tat-ca` | Bảng điều khiển tính trên số liệu **toàn hệ thống** |
+| `/thong-ke?pham-vi=tat-ca` | Thống kê tổng hợp **toàn hệ thống** |
+| `/xuat-csv?pham-vi=tat-ca` | Xuất CSV toàn bộ liên kết của mọi người |
+
+Ở trang **Toàn bộ liên kết**, mỗi thẻ có thêm dòng 👤 *tên đăng nhập* cho biết
+ai là chủ. Ảnh dưới đây là 8 liên kết của **hai** tài khoản khác nhau — trong
+đó `/bao-cao-truong` là của `ntbich`, không phải của quản trị viên đang xem:
+
+![Toàn bộ liên kết của mọi người](images/31-quan-tri-tat-ca-lien-ket.png)
+
+Trên bảng điều khiển và trang thống kê, hai nút **Chỉ xem của tôi** ↔ **Toàn hệ
+thống** đổi qua lại giữa hai phạm vi. Dòng chữ dưới tiêu đề luôn ghi rõ đang
+xem phạm vi nào:
+
+![Bảng điều khiển toàn hệ thống](images/32-bang-dieu-khien-tat-ca.png)
+
+![Thống kê toàn hệ thống](images/33-thong-ke-tat-ca.png)
+
+Quản trị viên cũng mở được trang **Thống kê chi tiết**, **Sửa**, **Mã QR** của
+liên kết do người khác tạo.
+
+### Người dùng thường thấy gì
+
+Ngược lại, tài khoản thường **chỉ** thấy liên kết của chính mình. Cùng trang
+`/lien-ket` nhưng đăng nhập bằng `ntbich` thì chỉ có 1 liên kết, và trên thanh
+menu không có mục **Quản trị**:
+
+![Người dùng thường chỉ thấy liên kết của mình](images/34-nguoi-dung-thuong-chi-thay-cua-minh.png)
+
+Gõ thẳng địa chỉ khu quản trị cũng không vào được — chặn ở phía máy chủ, không
+phải chỉ ẩn menu:
+
+![Người dùng thường bị chặn](images/35-nguoi-dung-thuong-bi-chan.png)
+
+### Quản trị viên *không* xem được gì
+
+Có mấy thứ **không ai** xem được, kể cả quản trị viên hay người quản lý máy chủ
+— vì hệ thống không lưu, hoặc chỉ lưu ở dạng đã băm một chiều:
+
+| Không xem được | Lý do |
+|---|---|
+| Mật khẩu tài khoản | Chỉ lưu bản băm `password_hash()`. Muốn giúp ai đó thì **đặt lại** mật khẩu, không đọc được mật khẩu cũ |
+| Mã dự phòng | Cũng chỉ lưu bản băm |
+| Mật khẩu bảo vệ liên kết | Cũng chỉ lưu bản băm. Quên thì đặt lại mật khẩu mới cho liên kết |
+| **Địa chỉ IP của người nhấp liên kết** | **Không hề được lưu.** Mỗi lượt nhấp chỉ lưu một dấu vết ẩn danh `sha256(IP + trình duyệt + muối)` cắt còn 32 ký tự, dùng để đếm "khách riêng" |
+| Danh tính người nhấp liên kết | Không có đăng nhập, không có cookie theo dõi, không gọi dịch vụ ngoài nào |
+
+Tức là thống kê trả lời được *"bao nhiêu người, dùng máy gì, vào lúc nào"*
+nhưng **không** trả lời được *"ai đã nhấp"* — đúng như mong đợi với một hệ
+thống của cơ quan nhà nước.
+
+Nói cho đủ, có hai chỗ hệ thống **vẫn** lưu địa chỉ IP, và cả hai đều là IP của
+**người đăng nhập tạo/sửa dữ liệu**, không phải của người nhấp liên kết:
+
+| Chỗ lưu | Dùng làm gì | Có hiện ra không |
+|---|---|---|
+| `audit_log.ip` | Truy vết ai làm gì từ máy nào | **Có** — cột IP ở trang `/quan-tri/nhat-ky` |
+| `links.creator_ip` | Giới hạn số liên kết khách chưa đăng nhập tạo được trong ngày | Không — không hiện ở bất cứ trang nào |
 
 ### Quản lý người dùng
 
