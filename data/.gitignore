@@ -1,0 +1,5 @@
+# Dữ liệu chạy thật không đưa vào git
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.log

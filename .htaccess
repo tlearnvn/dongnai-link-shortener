@@ -1,0 +1,61 @@
+# =============================================================================
+# Rút gọn link — Phòng GDPT-GDTX Sở GDĐT Đồng Nai
+# Cấu hình cho máy chủ Apache
+# =============================================================================
+
+# Không liệt kê nội dung thư mục
+Options -Indexes
+
+# Trang mặc định
+DirectoryIndex index.php
+
+# --- Định tuyến ---------------------------------------------------------------
+# Mọi đường dẫn không phải tệp/thư mục thật đều đưa về index.php để bộ định
+# tuyến xử lý. Không dùng RewriteBase để hệ thống chạy được cả khi đặt trong
+# thư mục con (ví dụ https://ten-mien.vn/rutgon/).
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Bỏ qua tệp và thư mục có thật (assets/css, assets/js…)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# --- Chặn truy cập trực tiếp vào dữ liệu và mã nguồn -------------------------
+<FilesMatch "\.(sqlite|sqlite3|db|log|sql|md)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# --- Nén nội dung ------------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/csv
+    AddOutputFilterByType DEFLATE application/javascript application/json
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# --- Bộ đệm cho tệp tĩnh ------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType image/png "access plus 1 day"
+</IfModule>
+
+# --- Vài header an toàn ------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# --- Mã hoá ký tự ------------------------------------------------------------
+AddDefaultCharset UTF-8

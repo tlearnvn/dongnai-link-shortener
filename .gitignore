@@ -1,0 +1,15 @@
+# Dữ liệu chạy thật (mỗi bản cài đặt tự sinh)
+data/*.sqlite
+data/*.sqlite-wal
+data/*.sqlite-shm
+data/*.log
+
+# Cấu hình riêng của từng máy chủ
+app/config.local.php
+
+# Rác của hệ điều hành / trình soạn thảo
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

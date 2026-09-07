@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+    <title>Rút gọn link</title>
+    <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#6366f1"/>
+            <stop offset=".55" stop-color="#a855f7"/>
+            <stop offset="1" stop-color="#14b8a6"/>
+        </linearGradient>
+    </defs>
+    <rect width="32" height="32" rx="9" fill="url(#g)"/>
+    <g fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round">
+        <path d="M12.6 19.4a3.6 3.6 0 0 1 0-5.1l2.1-2.1a3.6 3.6 0 0 1 5.1 5.1l-.8.8"/>
+        <path d="M19.4 12.6a3.6 3.6 0 0 1 0 5.1l-2.1 2.1a3.6 3.6 0 0 1-5.1-5.1l.8-.8" opacity=".75"/>
+    </g>
+</svg>
