@@ -25,8 +25,29 @@ $config = [
     'timezone' => 'Asia/Ho_Chi_Minh',
 
     // --- Cơ sở dữ liệu ----------------------------------------------------
-    // Toàn bộ dữ liệu nằm trong DUY NHẤT một tệp SQLite.
+    // 'sqlite' (mặc định) — toàn bộ dữ liệu nằm trong DUY NHẤT một tệp,
+    //                       không cần cài gì thêm, sao lưu bằng cách chép tệp.
+    // 'mysql'             — dùng MySQL / MariaDB, phù hợp khi lượng truy cập
+    //                       lớn hoặc muốn dùng công cụ sao lưu của hosting.
+    'db_driver' => 'sqlite',
+
+    // Dùng khi db_driver = 'sqlite'.
     'db_path' => __DIR__ . '/../data/rutgon.sqlite',
+
+    // Dùng khi db_driver = 'mysql'. Nên khai trong app/config.local.php để
+    // không lẫn mật khẩu vào tệp này (tệp này có trong bản phát hành).
+    'db_host' => '127.0.0.1',
+    'db_port' => 3306,
+    'db_name' => '',
+    'db_user' => '',
+    'db_pass' => '',
+    'db_charset' => 'utf8mb4',
+    // Một số hosting yêu cầu nối bằng socket thay cho host:port.
+    // Có giá trị thì hệ thống dùng socket và bỏ qua db_host/db_port.
+    'db_socket' => '',
+
+    // Nơi ghi tệp error.log. Để trống thì dùng thư mục data/.
+    'log_dir' => '',
 
     // --- Mã rút gọn -------------------------------------------------------
     'code_length' => 6,

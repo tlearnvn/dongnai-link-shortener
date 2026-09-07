@@ -4,14 +4,36 @@ declare(strict_types=1);
 /**
  * Chạy toàn bộ bộ kiểm định.
  *
- *   php tests/run_all.php
+ *   php tests/run_all.php              # kiểm định trên SQLite (mặc định)
+ *   php tests/run_all.php --mysql      # kiểm định trên MySQL / MariaDB
  *
  * Script tự bật máy chủ thử nghiệm trên một cổng trống, dùng cơ sở dữ liệu
- * tạm (không đụng tới dữ liệu thật trong data/), chạy ba bộ test rồi tắt máy
+ * tạm (không đụng tới dữ liệu thật trong data/), chạy bốn bộ test rồi tắt máy
  * chủ và xoá dữ liệu tạm.
+ *
+ * Chạy với --mysql thì lấy thông tin kết nối từ biến môi trường (có sẵn giá
+ * trị mặc định cho máy phát triển):
+ *
+ *   RUTGON_TEST_DB_HOST  mặc định 127.0.0.1
+ *   RUTGON_TEST_DB_PORT  mặc định 3306
+ *   RUTGON_TEST_DB_NAME  mặc định rutgon_test
+ *   RUTGON_TEST_DB_USER  mặc định rutgon
+ *   RUTGON_TEST_DB_PASS  mặc định để trống
+ *
+ * ⚠ Mọi bảng trong cơ sở dữ liệu đó bị XOÁ khi bắt đầu. Chỉ trỏ vào cơ sở
+ *   dữ liệu dành riêng cho kiểm định.
  */
 
 $root = dirname(__DIR__);
+$useMysql = in_array('--mysql', $argv, true);
+
+$mysql = [
+    'host' => getenv('RUTGON_TEST_DB_HOST') ?: '127.0.0.1',
+    'port' => (int) (getenv('RUTGON_TEST_DB_PORT') ?: 3306),
+    'name' => getenv('RUTGON_TEST_DB_NAME') ?: 'rutgon_test',
+    'user' => getenv('RUTGON_TEST_DB_USER') ?: 'rutgon',
+    'pass' => getenv('RUTGON_TEST_DB_PASS') ?: '',
+];
 $port = 8700 + random_int(0, 200);
 $base = "http://127.0.0.1:{$port}";
 
@@ -51,6 +73,9 @@ $runSuite = static function (string $name, array $command) use ($root, &$totalPa
 echo "\033[1m╔══════════════════════════════════════════════════════════════╗\033[0m\n";
 echo "\033[1m║  Kiểm định hệ thống Rút gọn link — Sở GDĐT Đồng Nai          ║\033[0m\n";
 echo "\033[1m╚══════════════════════════════════════════════════════════════╝\033[0m\n";
+printf("\033[2mCơ sở dữ liệu: %s\033[0m\n", $useMysql
+    ? sprintf('MySQL / MariaDB — %s@%s:%d', $mysql['name'], $mysql['host'], $mysql['port'])
+    : 'SQLite (tệp tạm)');
 
 // Bộ test không cần máy chủ. Chạy trước vì path_test có tạm thay
 // app/config.local.php để thử phần tự nhận diện địa chỉ.
@@ -66,14 +91,57 @@ $configBackup = null;
 if (is_file($configFile)) {
     $configBackup = (string) file_get_contents($configFile);
 }
-file_put_contents($configFile, <<<PHP
-<?php
-// Tệp này do tests/run_all.php sinh ra và sẽ được xoá khi chạy xong.
-return [
-    'db_path' => '{$tmpDir}/kiem-dinh.sqlite',
-    'site_url' => '{$base}',
-];
-PHP);
+if ($useMysql) {
+    // Xoá sạch bảng cũ để mỗi lần kiểm định bắt đầu từ cơ sở dữ liệu trắng,
+    // giống như SQLite luôn được cấp một tệp mới.
+    try {
+        $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+            $mysql['host'], $mysql['port'], $mysql['name']);
+        $probe = new PDO($dsn, $mysql['user'], $mysql['pass'], [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        ]);
+        $probe->exec('SET FOREIGN_KEY_CHECKS = 0');
+        $tables = $probe->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($tables as $table) {
+            $probe->exec('DROP TABLE IF EXISTS `' . str_replace('`', '', (string) $table) . '`');
+        }
+        $probe->exec('SET FOREIGN_KEY_CHECKS = 1');
+        printf("\033[2mĐã xoá %d bảng cũ trong %s\033[0m\n", count($tables), $mysql['name']);
+    } catch (PDOException $e) {
+        exit("\033[31mKhông kết nối được MySQL để kiểm định: {$e->getMessage()}\033[0m\n\n"
+            . "Tạo cơ sở dữ liệu kiểm định rồi chạy lại. Ví dụ:\n"
+            . "  mysql -e \"CREATE DATABASE {$mysql['name']} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci\"\n"
+            . "  mysql -e \"CREATE USER '{$mysql['user']}'@'{$mysql['host']}' IDENTIFIED BY '…'\"\n"
+            . "  mysql -e \"GRANT ALL ON {$mysql['name']}.* TO '{$mysql['user']}'@'{$mysql['host']}'\"\n");
+    }
+
+    $localConfig = <<<PHP
+    <?php
+    // Tệp này do tests/run_all.php sinh ra và sẽ được xoá khi chạy xong.
+    return [
+        'db_driver' => 'mysql',
+        'db_host' => '{$mysql['host']}',
+        'db_port' => {$mysql['port']},
+        'db_name' => '{$mysql['name']}',
+        'db_user' => '{$mysql['user']}',
+        'db_pass' => '{$mysql['pass']}',
+        'log_dir' => '{$tmpDir}',
+        'site_url' => '{$base}',
+    ];
+    PHP;
+} else {
+    $localConfig = <<<PHP
+    <?php
+    // Tệp này do tests/run_all.php sinh ra và sẽ được xoá khi chạy xong.
+    return [
+        'db_driver' => 'sqlite',
+        'db_path' => '{$tmpDir}/kiem-dinh.sqlite',
+        'log_dir' => '{$tmpDir}',
+        'site_url' => '{$base}',
+    ];
+    PHP;
+}
+file_put_contents($configFile, $localConfig);
 
 $server = null;
 $cleanup = static function () use (&$server, $configFile, $configBackup, $tmpDir): void {
@@ -102,7 +170,9 @@ foreach ([SIGINT, SIGTERM] as $signal) {
 }
 
 echo "\n\033[2mMáy chủ thử nghiệm: {$base}\033[0m\n";
-echo "\033[2mDữ liệu tạm:        {$tmpDir}/kiem-dinh.sqlite\033[0m\n";
+echo "\033[2mDữ liệu tạm:        " . ($useMysql
+    ? "MySQL {$mysql['name']} (bảng bị xoá trước khi chạy)"
+    : "{$tmpDir}/kiem-dinh.sqlite") . "\033[0m\n";
 
 $descriptors = [1 => ['file', '/dev/null', 'w'], 2 => ['file', $tmpDir . '/server.log', 'w']];
 $server = proc_open(
@@ -130,6 +200,9 @@ if (!$ready) {
     exit("Máy chủ thử nghiệm không phản hồi.\n");
 }
 
+// Lớp cơ sở dữ liệu: chạy trước bộ HTTP vì nó xoá sạch bảng để dựng dữ liệu
+// riêng, còn bộ HTTP thì tự tạo tài khoản đầu tiên của nó.
+$runSuite('Lớp cơ sở dữ liệu', [PHP_BINARY, $root . '/tests/db_test.php']);
 $runSuite('Ảnh mã QR trả về từ máy chủ', [PHP_BINARY, $root . '/tests/qr_image_test.php', $base]);
 $runSuite('Luồng sử dụng qua HTTP', [PHP_BINARY, $root . '/tests/app_test.php', $base]);
 

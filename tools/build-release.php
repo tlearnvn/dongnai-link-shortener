@@ -43,12 +43,19 @@ $include = [
     'assets/',
     'data/',
     'docs/',
+    // Công cụ chuyển dữ liệu giữa SQLite và MySQL. Người đã cài rồi mới cần,
+    // nên phải có trong bản tải về. An toàn để đóng gói: chỉ chạy được từ dòng
+    // lệnh và thư mục tools/ bị .htaccess chặn.
+    'tools/chuyen-doi-csdl.php',
 ];
 
 /** Những gì LOẠI RA, kể cả khi nằm trong các mục ở trên. */
 $exclude = [
     '#^tests/#',
-    '#^tools/#',
+    // tools/ bị loại, TRỪ những tệp ghi tường minh trong $include ở trên.
+    // tao-du-lieu-mau.php tạo tài khoản có mật khẩu công khai nên tuyệt đối
+    // không được đi theo bản phát hành.
+    '#^tools/(?!chuyen-doi-csdl\.php$)#',
     '#^dist/#',
     '#^docs/images/#',       // 5 MB ảnh, chỉ cần xem trên GitHub
     '#(^|/)\.git#',            // .gitignore, .gitattributes, .git/

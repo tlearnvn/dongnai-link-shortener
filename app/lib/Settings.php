@@ -41,11 +41,29 @@ final class Settings
 
     public static function set(string $key, ?string $value): void
     {
-        $stmt = Database::pdo()->prepare(
-            'INSERT INTO settings (key, value) VALUES (:k, :v)
-             ON CONFLICT(key) DO UPDATE SET value = excluded.value'
-        );
-        $stmt->execute([':k' => $key, ':v' => $value]);
+        // Xoá rồi thêm, gói trong một giao dịch: cú pháp "chèn hoặc cập nhật"
+        // của SQLite (ON CONFLICT … excluded) và của MySQL (ON DUPLICATE KEY
+        // UPDATE … VALUES()) khác nhau, còn cách này cả hai đều hiểu. Cài đặt
+        // chỉ đổi khi quản trị viên bấm lưu nên không cần tối ưu thêm.
+        $pdo = Database::pdo();
+        $ownTransaction = !$pdo->inTransaction();
+        if ($ownTransaction) {
+            $pdo->beginTransaction();
+        }
+        try {
+            $pdo->prepare('DELETE FROM settings WHERE `key` = :k')->execute([':k' => $key]);
+            $pdo->prepare('INSERT INTO settings (`key`, value) VALUES (:k, :v)')
+                ->execute([':k' => $key, ':v' => $value]);
+            if ($ownTransaction) {
+                $pdo->commit();
+            }
+        } catch (PDOException $e) {
+            if ($ownTransaction && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+
         self::prime();
         self::$cache[$key] = $value;
     }
@@ -64,7 +82,7 @@ final class Settings
         }
         self::$cache = [];
         try {
-            $rows = Database::pdo()->query('SELECT key, value FROM settings')->fetchAll();
+            $rows = Database::pdo()->query('SELECT `key`, value FROM settings')->fetchAll();
         } catch (PDOException) {
             return; // bảng chưa tồn tại (đang trong lúc tạo cấu trúc)
         }

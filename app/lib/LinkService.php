@@ -452,15 +452,34 @@ final class LinkService
 
         $q = trim((string) ($filters['q'] ?? ''));
         if ($q !== '') {
-            $where[] = '(l.code LIKE :q OR l.target_url LIKE :q OR IFNULL(l.title, "") LIKE :q
-                        OR IFNULL(l.note, "") LIKE :q OR IFNULL(l.tags, "") LIKE :q)';
-            $params[':q'] = '%' . $q . '%';
+            // Mỗi cột một tên tham số riêng: MySQL với native prepares không
+            // cho dùng lặp một tên tham số trong cùng câu lệnh. Chuỗi rỗng viết
+            // bằng '' (dấu nháy đơn) vì "" là tên cột trong SQL chuẩn.
+            $where[] = "(l.code LIKE :q_code
+                        OR l.target_url LIKE :q_url
+                        OR IFNULL(l.title, '') LIKE :q_title
+                        OR IFNULL(l.note, '') LIKE :q_note
+                        OR IFNULL(l.tags, '') LIKE :q_tags)";
+            $like = '%' . $q . '%';
+            foreach ([':q_code', ':q_url', ':q_title', ':q_note', ':q_tags'] as $name) {
+                $params[$name] = $like;
+            }
         }
 
         $tag = trim((string) ($filters['tag'] ?? ''));
         if ($tag !== '') {
-            $where[] = '("," || IFNULL(l.tags, "") || ",") LIKE :tag';
-            $params[':tag'] = '%,' . $tag . ',%';
+            // Thẻ lưu dạng "thẻ1,thẻ2,thẻ3". Không dùng phép nối chuỗi ở đây:
+            // trong SQLite "||" là nối chuỗi, còn trong MySQL "||" là phép HOẶC
+            // luận lý — cùng một câu lệnh sẽ cho kết quả khác nhau mà không báo
+            // lỗi. Thay bằng bốn dạng khớp tường minh, chạy đúng trên cả hai.
+            $where[] = "(IFNULL(l.tags, '') = :tag_only
+                        OR IFNULL(l.tags, '') LIKE :tag_first
+                        OR IFNULL(l.tags, '') LIKE :tag_last
+                        OR IFNULL(l.tags, '') LIKE :tag_middle)";
+            $params[':tag_only'] = $tag;               // thẻ duy nhất
+            $params[':tag_first'] = $tag . ',%';       // thẻ đầu tiên
+            $params[':tag_last'] = '%,' . $tag;        // thẻ cuối cùng
+            $params[':tag_middle'] = '%,' . $tag . ',%'; // thẻ ở giữa
         }
 
         if (!empty($filters['starred'])) {
@@ -471,10 +490,11 @@ final class LinkService
         switch ((string) ($filters['status'] ?? '')) {
             case 'active':
                 $where[] = 'l.is_active = 1
-                            AND (l.expires_at IS NULL OR l.expires_at > :now)
-                            AND (l.starts_at IS NULL OR l.starts_at <= :now)
+                            AND (l.expires_at IS NULL OR l.expires_at > :now_expires)
+                            AND (l.starts_at IS NULL OR l.starts_at <= :now_starts)
                             AND (l.max_clicks IS NULL OR l.click_count < l.max_clicks)';
-                $params[':now'] = $now;
+                $params[':now_expires'] = $now;
+                $params[':now_starts'] = $now;
                 break;
             case 'paused':
                 $where[] = 'l.is_active = 0';
@@ -499,7 +519,8 @@ final class LinkService
             'oldest' => 'l.created_at ASC',
             'clicks' => 'l.click_count DESC, l.created_at DESC',
             'least' => 'l.click_count ASC, l.created_at DESC',
-            'code' => 'l.code COLLATE NOCASE ASC',
+            // LOWER() thay cho COLLATE NOCASE để chạy được cả SQLite và MySQL.
+            'code' => 'LOWER(l.code) ASC',
             // Viết tường minh thay cho "NULLS LAST" để chạy được với SQLite cũ.
             'recent_click' => 'l.last_click_at IS NULL, l.last_click_at DESC, l.created_at DESC',
             default => 'l.created_at DESC',
@@ -539,7 +560,7 @@ final class LinkService
     /** Tất cả thẻ đang dùng, kèm số lượng liên kết. @return array<string, int> */
     public static function tagCounts(?int $userId = null): array
     {
-        $sql = 'SELECT tags FROM links WHERE tags IS NOT NULL AND tags <> ""';
+        $sql = "SELECT tags FROM links WHERE tags IS NOT NULL AND tags <> ''";
         $params = [];
         if ($userId !== null) {
             $sql .= ' AND user_id = :u';

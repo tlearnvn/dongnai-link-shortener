@@ -31,8 +31,14 @@ final class AdminController
                 FROM users u';
         $params = [];
         if ($q !== '') {
-            $sql .= ' WHERE u.username LIKE :q OR IFNULL(u.full_name, "") LIKE :q OR IFNULL(u.email, "") LIKE :q';
-            $params[':q'] = '%' . $q . '%';
+            // Mỗi cột một tên tham số riêng (MySQL không cho dùng lặp một tên).
+            $sql .= " WHERE u.username LIKE :q_username
+                         OR IFNULL(u.full_name, '') LIKE :q_full_name
+                         OR IFNULL(u.email, '') LIKE :q_email";
+            $like = '%' . $q . '%';
+            foreach ([':q_username', ':q_full_name', ':q_email'] as $name) {
+                $params[$name] = $like;
+            }
         }
         $sql .= ' ORDER BY u.created_at DESC';
 

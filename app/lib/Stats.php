@@ -73,11 +73,13 @@ final class Stats
 
         // Đếm liên kết đang chạy (áp dụng đúng các điều kiện như lúc chuyển hướng)
         $now = Clock::now();
+        // :now_expires và :now_starts là cùng một giá trị, tách tên vì MySQL
+        // với native prepares không cho dùng lặp một tên tham số.
         $activeSql = 'SELECT COUNT(*) FROM links WHERE is_active = 1
-                        AND (expires_at IS NULL OR expires_at > :now)
-                        AND (starts_at IS NULL OR starts_at <= :now)
+                        AND (expires_at IS NULL OR expires_at > :now_expires)
+                        AND (starts_at IS NULL OR starts_at <= :now_starts)
                         AND (max_clicks IS NULL OR click_count < max_clicks)';
-        $activeParams = [':now' => $now];
+        $activeParams = [':now_expires' => $now, ':now_starts' => $now];
         if ($userId !== null) {
             $activeSql .= ' AND user_id = :user_id';
             $activeParams[':user_id'] = $userId;

@@ -30,11 +30,20 @@
 # gọi được /tests/app_test.php và bộ test sẽ tạo hàng loạt dữ liệu rác.
 
 tests/          export-ignore
-tools/          export-ignore
-dist/           export-ignore
 docs/images/    export-ignore
 .gitattributes  export-ignore
 .gitignore      export-ignore
+
+# tools/ dùng "tools/**" chứ không dùng "tools/": mẫu "tools/" khớp cả mục thư
+# mục nên git archive bỏ luôn cả nhánh, và các dòng riêng cho từng tệp bên
+# trong không bao giờ được xét tới. Với "tools/**" thì thư mục vẫn còn, nên
+# dòng dưới gỡ được đúng một tệp ra khỏi danh sách loại.
+tools/**        export-ignore
+
+# Công cụ chuyển dữ liệu giữa SQLite và MySQL — người đã cài rồi mới cần tới
+# nó, nên bản tải về phải có. Dòng khớp sau thắng dòng khớp trước.
+tools/chuyen-doi-csdl.php  -export-ignore
+dist/           export-ignore
 
 # --- Nhận diện ngôn ngữ trên trang GitHub -----------------------------------
 docs/*  linguist-documentation

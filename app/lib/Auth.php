@@ -93,10 +93,15 @@ final class Auth
 
     public static function findByLogin(string $login): ?array
     {
+        // Hai tham số riêng cho cùng một giá trị: MySQL với native prepares
+        // không cho dùng lặp một tên tham số trong cùng câu lệnh.
         $stmt = Database::pdo()->prepare(
-            'SELECT * FROM users WHERE username = :login OR (email IS NOT NULL AND email <> "" AND email = :login) LIMIT 1'
+            'SELECT * FROM users
+             WHERE username = :login_username
+                OR (email IS NOT NULL AND email <> \'\' AND email = :login_email)
+             LIMIT 1'
         );
-        $stmt->execute([':login' => $login]);
+        $stmt->execute([':login_username' => $login, ':login_email' => $login]);
         $row = $stmt->fetch();
         return $row === false ? null : $row;
     }

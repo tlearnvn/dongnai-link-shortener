@@ -8,11 +8,9 @@ if (PHP_VERSION_ID < 80100) {
     exit('Hệ thống cần PHP 8.1 trở lên. Phiên bản đang chạy: ' . PHP_VERSION);
 }
 
-foreach (['pdo_sqlite', 'mbstring'] as $extension) {
-    if (!extension_loaded($extension)) {
-        http_response_code(500);
-        exit("Thiếu phần mở rộng PHP bắt buộc: {$extension}. Vui lòng bật trong php.ini rồi thử lại.");
-    }
+if (!extension_loaded('mbstring')) {
+    http_response_code(500);
+    exit('Thiếu phần mở rộng PHP bắt buộc: mbstring. Vui lòng bật trong php.ini rồi thử lại.');
 }
 
 // --- Nạp lớp tự động ------------------------------------------------------
@@ -32,12 +30,30 @@ require __DIR__ . '/lib/Support.php';
 Config::load();
 date_default_timezone_set((string) Config::get('timezone', 'Asia/Ho_Chi_Minh'));
 
+// --- Phần mở rộng cho loại cơ sở dữ liệu đang chọn ------------------------
+// Kiểm tra sau khi nạp cấu hình, vì mỗi loại cần một phần mở rộng khác nhau.
+$dbDriver = strtolower(trim((string) Config::get('db_driver', 'sqlite'))) ?: 'sqlite';
+$dbExtension = $dbDriver === 'mysql' ? 'pdo_mysql' : 'pdo_sqlite';
+if (!extension_loaded($dbExtension)) {
+    http_response_code(500);
+    exit(
+        "Cấu hình db_driver = '{$dbDriver}' cần phần mở rộng PHP {$dbExtension}, "
+        . 'nhưng phần mở rộng này chưa được bật. Trên cPanel: Select PHP Version '
+        . "→ tab Extensions → tích {$dbExtension} → Save."
+    );
+}
+unset($dbDriver, $dbExtension);
+
 // --- Xử lý lỗi ------------------------------------------------------------
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
-$logFile = dirname((string) Config::get('db_path')) . '/error.log';
+$logDir = trim((string) Config::get('log_dir'));
+if ($logDir === '') {
+    $logDir = dirname((string) Config::get('db_path'));
+}
+$logFile = rtrim($logDir, '/\\') . '/error.log';
 if (is_dir(dirname($logFile))) {
     ini_set('error_log', $logFile);
 }

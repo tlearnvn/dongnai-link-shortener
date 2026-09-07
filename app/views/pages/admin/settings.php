@@ -110,18 +110,31 @@ $currentEcc = (int) ($settings['default_ecc'] ?? 1);
         <div class="card">
             <h2 class="card__title">Thông tin kỹ thuật</h2>
             <dl class="spec-list">
-                <div><dt>Tệp cơ sở dữ liệu</dt><dd><code><?= e(Database::path()) ?></code></dd></div>
+                <div><dt>Loại cơ sở dữ liệu</dt><dd><?= e(Database::driverLabel()) ?></dd></div>
+                <div>
+                    <dt><?= Database::isMysql() ? 'Cơ sở dữ liệu' : 'Tệp cơ sở dữ liệu' ?></dt>
+                    <dd><code><?= e(Database::location()) ?></code></dd>
+                </div>
                 <div><dt>Dung lượng</dt><dd><?= e(bytes_human((int) $summary['db_size'])) ?></dd></div>
                 <div><dt>Số bản ghi lượt nhấp</dt><dd><?= e(n((int) $summary['clicks'])) ?></dd></div>
                 <div><dt>Phiên bản PHP</dt><dd><?= e(PHP_VERSION) ?></dd></div>
-                <div><dt>Phiên bản SQLite</dt><dd><?= e((string) Database::pdo()->query('SELECT sqlite_version()')->fetchColumn()) ?></dd></div>
+                <div>
+                    <dt>Phiên bản <?= Database::isMysql() ? 'MySQL' : 'SQLite' ?></dt>
+                    <dd><?= e(Database::serverVersion()) ?></dd>
+                </div>
                 <div><dt>Múi giờ</dt><dd><?= e((string) Config::get('timezone')) ?> — <?= e(Clock::tzLabel()) ?></dd></div>
                 <div><dt>Giờ máy chủ hiện tại</dt><dd><?= e(Clock::nowDt()->format('H:i:s d/m/Y')) ?></dd></div>
                 <div><dt>Địa chỉ gốc</dt><dd><code><?= e(base_url()) ?></code></dd></div>
             </dl>
             <p class="card__foot-note">
-                Sao lưu hệ thống chỉ cần chép tệp cơ sở dữ liệu ở trên (kèm hai tệp
-                <code>-wal</code>, <code>-shm</code> nếu có) sang nơi an toàn.
+                <?php if (Database::isMysql()): ?>
+                    Sao lưu bằng công cụ của hosting (cPanel → Backup, hoặc phpMyAdmin →
+                    Export) hoặc lệnh <code>mysqldump</code>. Nhớ sao lưu cả tệp
+                    <code>app/config.local.php</code> vì tệp này chứa thông tin kết nối.
+                <?php else: ?>
+                    Sao lưu hệ thống chỉ cần chép tệp cơ sở dữ liệu ở trên (kèm hai tệp
+                    <code>-wal</code>, <code>-shm</code> nếu có) sang nơi an toàn.
+                <?php endif; ?>
             </p>
         </div>
 
@@ -187,7 +200,11 @@ $currentEcc = (int) ($settings['default_ecc'] ?? 1);
                     <input type="hidden" name="action" value="vacuum">
                     <div>
                         <h3>Dồn nén cơ sở dữ liệu</h3>
-                        <p>Chạy lệnh VACUUM để thu nhỏ tệp sau khi xoá nhiều dữ liệu.</p>
+                        <p>
+                            <?= Database::isMysql()
+                                ? 'Chạy lệnh OPTIMIZE TABLE để dựng lại bảng sau khi xoá nhiều dữ liệu.'
+                                : 'Chạy lệnh VACUUM để thu nhỏ tệp sau khi xoá nhiều dữ liệu.' ?>
+                        </p>
                     </div>
                     <div class="maintenance__control">
                         <button class="btn btn--ghost btn--sm" type="submit">Dồn nén</button>

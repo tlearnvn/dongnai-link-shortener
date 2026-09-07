@@ -37,11 +37,25 @@ const TEN_CAN_BO = 'ntbich';
 $force = in_array('--force', $argv, true);
 $pdo = Database::pdo();
 
-/** Đường dẫn tệp cơ sở dữ liệu, rút gọn cho dễ đọc. */
+/** Nơi lưu dữ liệu, hiện cho dễ đọc — khác nhau giữa SQLite và MySQL. */
 function duongDanCsdl(): string
 {
+    if (Database::isMysql()) {
+        return Database::location();
+    }
     $path = Database::path();
     return realpath($path) ?: $path;
+}
+
+/** Cách xoá dữ liệu mẫu, tuỳ loại cơ sở dữ liệu. */
+function cachXoaDuLieuMau(): string
+{
+    if (Database::isMysql()) {
+        return "  Xoá các bảng trong cơ sở dữ liệu " . Config::get('db_name') . " (phpMyAdmin → Drop),\n"
+            . "  rồi mở lại trang chủ — hệ thống tự tạo lại bảng trắng.\n";
+    }
+    return '  Xoá tệp ' . duongDanCsdl() . " rồi mở lại trang chủ,\n"
+        . "  hệ thống sẽ tạo cơ sở dữ liệu trắng và bạn đăng ký tài khoản mới.\n";
 }
 
 // ------------------------------------------------------------------ chốt an toàn
@@ -222,14 +236,21 @@ foreach ($dsLienKet as $code => $tin) {
         ]);
     }
 
-    // Đồng bộ số tổng hợp với bảng clicks
+    // Đồng bộ số tổng hợp với bảng clicks.
+    // Bốn tên tham số riêng cho cùng một giá trị: MySQL với native prepares
+    // không cho dùng lặp một tên tham số trong cùng câu lệnh.
     $pdo->prepare(
         'UPDATE links SET
-            click_count   = (SELECT COUNT(*) FROM clicks WHERE link_id = :id),
-            unique_count  = (SELECT IFNULL(SUM(is_unique), 0) FROM clicks WHERE link_id = :id),
-            last_click_at = (SELECT MAX(clicked_at) FROM clicks WHERE link_id = :id)
-         WHERE id = :id'
-    )->execute([':id' => $tin['id']]);
+            click_count   = (SELECT COUNT(*) FROM clicks WHERE link_id = :id_total),
+            unique_count  = (SELECT IFNULL(SUM(is_unique), 0) FROM clicks WHERE link_id = :id_uniq),
+            last_click_at = (SELECT MAX(clicked_at) FROM clicks WHERE link_id = :id_last)
+         WHERE id = :id_row'
+    )->execute([
+        ':id_total' => $tin['id'],
+        ':id_uniq' => $tin['id'],
+        ':id_last' => $tin['id'],
+        ':id_row' => $tin['id'],
+    ]);
 }
 $pdo->commit();
 
@@ -290,5 +311,4 @@ echo "  /thong-ke?pham-vi=tat-ca          Thống kê toàn hệ thống\n";
 echo "  /xuat-csv?pham-vi=tat-ca          Xuất CSV toàn bộ liên kết\n";
 
 echo "\n\033[33m⚠ Nhớ xoá dữ liệu mẫu trước khi dùng thật:\033[0m\n";
-echo "  Xoá tệp " . duongDanCsdl() . " rồi mở lại trang chủ,\n";
-echo "  hệ thống sẽ tạo cơ sở dữ liệu trắng và bạn đăng ký tài khoản mới.\n\n";
+echo cachXoaDuLieuMau() . "\n";

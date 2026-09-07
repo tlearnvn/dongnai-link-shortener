@@ -574,10 +574,30 @@ if ($isAdmin) {
         check("{$label} trả về 200", $page['status'] === 200, 'nhận ' . $page['status']);
     }
 
+    // Trang cài đặt phải mô tả đúng loại cơ sở dữ liệu đang chạy. Tự nhận
+    // diện từ nội dung trang thay vì truyền tham số vào, để cùng một bộ test
+    // chạy được cả trên SQLite và MySQL.
     $settingsPage = request('/quan-tri/cai-dat');
-    check('Cài đặt hiện đường dẫn tệp cơ sở dữ liệu',
-        str_contains($settingsPage['body'], '.sqlite'));
-    check('Cài đặt hiện phiên bản SQLite', str_contains($settingsPage['body'], 'Phiên bản SQLite'));
+    $onMysql = str_contains($settingsPage['body'], 'MySQL / MariaDB');
+    check('Cài đặt hiện loại cơ sở dữ liệu',
+        $onMysql || str_contains($settingsPage['body'], 'SQLite (một tệp)'),
+        'không thấy tên loại cơ sở dữ liệu nào');
+
+    if ($onMysql) {
+        check('Cài đặt hiện tên cơ sở dữ liệu MySQL',
+            (bool) preg_match('/<code>[^<]+ @ [^<]+<\/code>/', $settingsPage['body']),
+            'không thấy dạng "tên_csdl @ máy_chủ"');
+        check('Cài đặt hiện phiên bản MySQL', str_contains($settingsPage['body'], 'Phiên bản MySQL'));
+        check('Hướng dẫn sao lưu nói về mysqldump, không nói chép tệp',
+            str_contains($settingsPage['body'], 'mysqldump')
+            && !str_contains($settingsPage['body'], 'chép tệp cơ sở dữ liệu'));
+    } else {
+        check('Cài đặt hiện đường dẫn tệp cơ sở dữ liệu',
+            str_contains($settingsPage['body'], '.sqlite'));
+        check('Cài đặt hiện phiên bản SQLite', str_contains($settingsPage['body'], 'Phiên bản SQLite'));
+        check('Hướng dẫn sao lưu nói về việc chép tệp',
+            str_contains($settingsPage['body'], 'chép tệp cơ sở dữ liệu'));
+    }
 
     // Lưu thông báo trên đầu trang
     $notice = 'Thông báo kiểm định ' . bin2hex(random_bytes(2));
