@@ -5,8 +5,10 @@ thành liên kết ngắn **tự đặt tên được**, kèm **mã QR** để i
 **thống kê đầy đủ** số lượt truy cập.
 
 Viết bằng **PHP thuần + HTML + CSS**, không dùng Composer, không thư viện
-JavaScript ngoài. Toàn bộ dữ liệu nằm trong **một tệp SQLite duy nhất**.
-Mọi mốc thời gian theo **giờ Việt Nam (UTC+7)**.
+JavaScript ngoài. Dữ liệu lưu trong **một tệp SQLite duy nhất** (mặc định,
+không cần cài gì) hoặc **MySQL / MariaDB** — đổi qua lại được bất cứ lúc nào
+mà giữ nguyên toàn bộ dữ liệu. Mọi mốc thời gian theo
+**giờ Việt Nam (UTC+7)**.
 
 *Thiết kế bởi Trương Anh Tuấn.*
 
@@ -131,12 +133,14 @@ Giải nén vào `public_html`, cấp quyền ghi cho `data/`, mở trang chủ 
 | Thành phần | Yêu cầu |
 |---|---|
 | PHP | 8.1 trở lên (đã kiểm định trên 8.4) |
-| Phần mở rộng bắt buộc | `pdo_sqlite`, `mbstring` |
+| Phần mở rộng bắt buộc | `mbstring`, và `pdo_sqlite` **hoặc** `pdo_mysql` tuỳ loại cơ sở dữ liệu |
 | Phần mở rộng nên có | `gd` (để xuất mã QR dạng PNG) |
+| Cơ sở dữ liệu | Không cần gì (SQLite), hoặc MySQL 5.7+ / MariaDB 10.2+ |
 | Máy chủ web | Apache có `mod_rewrite`, hoặc Nginx, hoặc IIS |
-| Dung lượng | Vài MB cho mã nguồn; tệp dữ liệu lớn dần theo số lượt nhấp |
+| Dung lượng | Vài MB cho mã nguồn; dữ liệu lớn dần theo số lượt nhấp |
 
-Không cần MySQL, không cần Composer, không cần Node.js.
+Không cần Composer, không cần Node.js. **Cách mặc định không cần cả MySQL** —
+chỉ một tệp SQLite.
 
 ---
 
@@ -228,7 +232,13 @@ các khoá cần ghi đè (tệp này không bị ghi đè khi cập nhật mã 
 | `site_owner` | `Phòng GDPT-GDTX Sở GDĐT Đồng Nai` | Tên đơn vị |
 | `footer_credit` | `Thiết kế bởi Trương Anh Tuấn` | Dòng chân trang |
 | `timezone` | `Asia/Ho_Chi_Minh` | Múi giờ toàn hệ thống (UTC+7) |
-| `db_path` | `data/rutgon.sqlite` | Đường dẫn tệp cơ sở dữ liệu |
+| `db_driver` | `sqlite` | Loại cơ sở dữ liệu: `sqlite` hoặc `mysql` |
+| `db_path` | `data/rutgon.sqlite` | Đường dẫn tệp — chỉ dùng khi `db_driver` = `sqlite` |
+| `db_host` / `db_port` | `127.0.0.1` / `3306` | Máy chủ MySQL |
+| `db_name` / `db_user` / `db_pass` | trống | Thông tin kết nối MySQL |
+| `db_socket` | trống | Nối qua socket thay cho host:port (một số hosting yêu cầu) |
+| `db_charset` | `utf8mb4` | Bộ ký tự MySQL |
+| `log_dir` | thư mục của `db_path` | Nơi ghi `error.log` |
 | `code_length` | `6` | Độ dài mã tự sinh |
 | `code_min_length` / `code_max_length` | `3` / `64` | Giới hạn độ dài tên tuỳ chọn |
 | `guest_hourly_limit` | `10` | Số liên kết một khách tạo được mỗi giờ |
@@ -244,7 +254,8 @@ dải thông báo…) đổi trực tiếp trong **Quản trị → Cài đặt*
 
 ## Sao lưu
 
-Toàn bộ dữ liệu nằm trong một tệp. Sao lưu chỉ cần chép tệp đó:
+**Khi dùng SQLite** — toàn bộ dữ liệu nằm trong một tệp, sao lưu chỉ cần chép
+tệp đó:
 
 ```bash
 # Cách an toàn nhất (chép đúng cả khi hệ thống đang chạy)
@@ -255,6 +266,31 @@ cp data/rutgon.sqlite data/rutgon.sqlite-wal data/rutgon.sqlite-shm /duong-dan-s
 ```
 
 Phục hồi: dừng máy chủ web, chép tệp trở lại `data/`, khởi động lại.
+
+**Khi dùng MySQL:**
+
+```bash
+mysqldump --single-transaction --default-character-set=utf8mb4 \
+    -u NGUOI_DUNG -p TEN_CSDL > rutgon-$(date +%F).sql
+```
+
+Nhớ sao lưu **cả tệp `app/config.local.php`** — không có nó thì bản sao cơ sở
+dữ liệu vô dụng vì mất thông tin kết nối.
+
+### Đổi giữa SQLite và MySQL
+
+```bash
+php tools/chuyen-doi-csdl.php --sang=mysql --thu   # xem trước, không ghi gì
+php tools/chuyen-doi-csdl.php --sang=mysql         # chuyển thật
+php tools/chuyen-doi-csdl.php --sang=sqlite        # chuyển ngược lại
+```
+
+Cả hai phía đọc thông tin kết nối từ `app/config.local.php`, nên không có mật
+khẩu nào nằm trên dòng lệnh. Mã số (id) được giữ nguyên nên liên kết ngắn và
+mã QR đã in ra vẫn dùng bình thường. Chuyển xong thì đổi `db_driver`.
+
+Hướng dẫn từng bước cho cPanel (kể cả cách chạy khi hosting không có SSH):
+[docs/cai-dat-cpanel.md](docs/cai-dat-cpanel.md#dùng-mysql-thay-cho-sqlite).
 
 ---
 
@@ -275,16 +311,18 @@ rewrite mà máy chủ thử nghiệm không có.
 ## Kiểm định
 
 ```bash
-php tests/run_all.php
+php tests/run_all.php              # kiểm định trên SQLite
+php tests/run_all.php --mysql      # kiểm định trên MySQL / MariaDB
 ```
 
 Script tự bật máy chủ trên một cổng trống, dùng **cơ sở dữ liệu tạm** (không
-đụng tới dữ liệu thật), chạy ba bộ test rồi dọn sạch:
+đụng tới dữ liệu thật), chạy năm bộ test rồi dọn sạch:
 
 | Bộ test | Nội dung |
 |---|---|
 | `tests/path_test.php` | Nhận diện đường dẫn ở cả ba kiểu triển khai: ngay gốc tên miền, trong thư mục con, và máy chủ không bật rewrite (`/index.php/...`); kèm các tình huống proxy/CDN, cổng lẻ, header `Host` chứa ký tự lạ |
 | `tests/qr_test.php` | Thuật toán tạo mã QR: đối chiếu bảng vị trí hoa văn căn chỉnh và bảng dung lượng với chuẩn ISO/IEC 18004, giải mã ngược ma trận về chuỗi gốc cho cả 40 phiên bản × 4 mức sửa lỗi, kiểm tra syndrome Reed–Solomon bằng 0 |
+| `tests/db_test.php` | Lớp cơ sở dữ liệu, chạy trên loại đang cấu hình: so cấu trúc bảng của loại đang chạy với cấu trúc SQLite dựng trong bộ nhớ, tra cứu không phân biệt hoa/thường, lọc theo thẻ và theo trạng thái, sắp xếp, ràng buộc khoá ngoại, kiểu trả về của `SUM()` |
 | `tests/qr_image_test.php` | Đọc từng điểm ảnh của tệp PNG do máy chủ trả về, dựng lại ma trận rồi giải mã — đúng đường mà máy quét thật đi, thử 9 kiểu tuỳ chỉnh |
 | `tests/app_test.php` | Luồng sử dụng qua HTTP thật: rút gọn, tên tuỳ chọn trùng/bị giữ, chuyển hướng, mật khẩu liên kết, hạn dùng, giới hạn lượt, phân quyền, CSRF, XSS, API, khu quản trị |
 
@@ -292,7 +330,13 @@ Bộ giải mã QR trong `tests/qr_decoder.php` được viết **độc lập**
 `app/lib/QrCode.php` (dựng lại từ mô tả trong chuẩn), nên nếu bộ mã hoá sai
 thì test phát hiện được, chứ không phải hai bên cùng sai rồi triệt tiêu nhau.
 
-Kết quả mong đợi: **201 hạng mục đạt, 0 lỗi**, nhật ký máy chủ sạch.
+Kết quả mong đợi: **268 hạng mục đạt, 0 lỗi**, nhật ký máy chủ sạch — số
+hạng mục **bằng nhau trên cả hai loại cơ sở dữ liệu**.
+
+`tests/db_test.php` kiểm theo **kết quả trả về**, không chỉ kiểm có báo lỗi
+hay không. Lỗi tương thích nguy hiểm nhất là loại chạy êm mà trả về sai: câu
+lệnh lọc theo thẻ dùng phép `||` hoạt động trên SQLite (nối chuỗi) nhưng MySQL
+hiểu `||` là phép HOẶC luận lý, nên trả về danh sách sai **mà không báo gì**.
 
 ---
 
@@ -308,7 +352,7 @@ Kết quả mong đợi: **201 hạng mục đạt, 0 lỗi**, nhật ký máy c
 │   ├── lib/
 │   │   ├── QrCode.php      Bộ tạo mã QR thuần PHP (phiên bản 1–40, L/M/Q/H)
 │   │   ├── Chart.php       Vẽ biểu đồ SVG ở máy chủ
-│   │   ├── Database.php    Kết nối SQLite + tạo bảng
+│   │   ├── Database.php    Kết nối SQLite hoặc MySQL + tạo bảng
 │   │   ├── LinkService.php Nghiệp vụ liên kết, ghi nhận lượt nhấp
 │   │   ├── Stats.php       Truy vấn thống kê
 │   │   ├── Auth.php        Đăng ký, đăng nhập, phân quyền

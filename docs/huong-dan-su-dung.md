@@ -624,6 +624,23 @@ Nói cho đủ, có hai chỗ hệ thống **vẫn** lưu địa chỉ IP, và c
 
 Ghi lại ai làm gì, lúc nào: đăng nhập, tạo/sửa/xoá liên kết, đổi cài đặt.
 
+### Hệ thống đang lưu dữ liệu ở đâu
+
+Mục **Thông tin kỹ thuật** ở trang *Cài đặt* cho biết hệ thống đang dùng loại
+cơ sở dữ liệu nào. Có hai loại:
+
+| Loại | Nghĩa là |
+|---|---|
+| **SQLite (một tệp)** | Toàn bộ dữ liệu trong một tệp trên hosting. Sao lưu = chép tệp đó |
+| **MySQL / MariaDB** | Dữ liệu trong cơ sở dữ liệu của hosting. Sao lưu bằng cPanel → Backup hoặc phpMyAdmin → Export |
+
+![Trang quản trị khi chạy MySQL](images/36-quan-tri-mysql.png)
+
+Đổi từ loại này sang loại kia được, và **giữ nguyên toàn bộ dữ liệu** — liên
+kết ngắn cùng mã QR đã in ra vẫn dùng bình thường. Việc này do người phụ trách
+hosting làm, xem
+[hướng dẫn cài đặt](cai-dat-cpanel.md#dùng-mysql-thay-cho-sqlite).
+
 ---
 
 ## 14. Câu hỏi thường gặp

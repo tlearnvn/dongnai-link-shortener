@@ -13,18 +13,19 @@ Người dùng cuối xem [Hướng dẫn sử dụng](huong-dan-su-dung.md).
 1. [Kiến trúc tổng thể](#1-kiến-trúc-tổng-thể)
 2. [Vòng đời một yêu cầu](#2-vòng-đời-một-yêu-cầu)
 3. [Cơ sở dữ liệu](#3-cơ-sở-dữ-liệu)
-4. [Quy trình rút gọn liên kết](#4-quy-trình-rút-gọn-liên-kết)
-5. [Quy trình chuyển hướng và ghi thống kê](#5-quy-trình-chuyển-hướng-và-ghi-thống-kê)
-6. [Vòng đời trạng thái liên kết](#6-vòng-đời-trạng-thái-liên-kết)
-7. [Quy trình tạo mã QR](#7-quy-trình-tạo-mã-qr)
-8. [Xác thực và phân quyền](#8-xác-thực-và-phân-quyền)
-9. [Xử lý thời gian UTC+7](#9-xử-lý-thời-gian-utc7)
-10. [Bảo mật](#10-bảo-mật)
-11. [Quy trình kiểm định](#11-quy-trình-kiểm-định)
-12. [Quy trình sao lưu và phục hồi](#12-quy-trình-sao-lưu-và-phục-hồi)
-13. [Quy trình nâng cấp phiên bản](#13-quy-trình-nâng-cấp-phiên-bản)
-14. [Quy trình phát hành bản mới](#13b-quy-trình-phát-hành-bản-mới)
-15. [Xử lý sự cố thường gặp](#14-xử-lý-sự-cố-thường-gặp)
+4. [Hai loại cơ sở dữ liệu — SQLite và MySQL](#3b-hai-loại-cơ-sở-dữ-liệu)
+5. [Quy trình rút gọn liên kết](#4-quy-trình-rút-gọn-liên-kết)
+6. [Quy trình chuyển hướng và ghi thống kê](#5-quy-trình-chuyển-hướng-và-ghi-thống-kê)
+7. [Vòng đời trạng thái liên kết](#6-vòng-đời-trạng-thái-liên-kết)
+8. [Quy trình tạo mã QR](#7-quy-trình-tạo-mã-qr)
+9. [Xác thực và phân quyền](#8-xác-thực-và-phân-quyền)
+10. [Xử lý thời gian UTC+7](#9-xử-lý-thời-gian-utc7)
+11. [Bảo mật](#10-bảo-mật)
+12. [Quy trình kiểm định](#11-quy-trình-kiểm-định)
+13. [Quy trình sao lưu và phục hồi](#12-quy-trình-sao-lưu-và-phục-hồi)
+14. [Quy trình nâng cấp phiên bản](#13-quy-trình-nâng-cấp-phiên-bản)
+15. [Quy trình phát hành bản mới](#13b-quy-trình-phát-hành-bản-mới)
+16. [Xử lý sự cố thường gặp](#14-xử-lý-sự-cố-thường-gặp)
 
 ---
 
@@ -117,8 +118,13 @@ sequenceDiagram
 
 ## 3. Cơ sở dữ liệu
 
-Bảy bảng, tất cả trong `data/rutgon.sqlite`. Bảng được tạo tự động ở lần
+Bảy bảng, chạy được trên **SQLite** (mặc định, tất cả trong
+`data/rutgon.sqlite`) hoặc **MySQL / MariaDB**. Bảng được tạo tự động ở lần
 truy cập đầu tiên (`Database::migrate()`).
+
+Sơ đồ quan hệ dưới đây ghi kiểu dữ liệu của bản SQLite; bản MySQL tương ứng
+một-một, xem [mục 3b](#3b-hai-loại-cơ-sở-dữ-liệu) để biết chỗ nào khác và vì
+sao.
 
 ```mermaid
 erDiagram
@@ -235,6 +241,189 @@ erDiagram
   `clicks(click_date)`, `clicks(link_id, visitor_hash)`.
 - SQLite chạy ở chế độ **WAL** (`journal_mode = WAL`) để đọc và ghi không
   chặn nhau, `busy_timeout = 5000` để chịu được truy cập đồng thời.
+
+---
+
+## 3b. Hai loại cơ sở dữ liệu
+
+Chọn bằng `db_driver` trong cấu hình. Phần còn lại của hệ thống — controller,
+view, `LinkService`, `Stats` — **không có một dòng nào** phân biệt hai loại:
+mọi câu lệnh SQL trong `app/` viết bằng cú pháp cả hai đều hiểu.
+
+```mermaid
+flowchart TB
+    CFG["app/config.local.php<br/>db_driver"] --> SW{"driver ?"}
+
+    SW -->|sqlite| SQL["connectSqlite()<br/>PDO sqlite:db_path<br/>PRAGMA WAL· foreign_keys<br/>busy_timeout· synchronous"]
+    SW -->|mysql| MY["connectMysql()<br/>PDO mysql:host· port· dbname<br/>hoặc unix_socket<br/>SET time_zone = '+07:00'"]
+
+    SQL --> SCH{"createSchema()"}
+    MY --> SCH
+    SCH -->|sqlite| DS["schemaSqlite()<br/>TEXT· INTEGER· COLLATE NOCASE<br/>CREATE INDEX IF NOT EXISTS"]
+    SCH -->|mysql| DM["schemaMysql()<br/>VARCHAR· BIGINT· TINYINT<br/>chỉ mục trong CREATE TABLE<br/>utf8mb4_unicode_ci"]
+
+    DS --> PDO["Một đối tượng PDO dùng chung"]
+    DM --> PDO
+    PDO --> APP["LinkService· Stats· Auth· Settings<br/>KHÔNG biết đang chạy loại nào"]
+
+    style CFG fill:#e0e7ff,stroke:#4f46e5
+    style PDO fill:#dcfce7,stroke:#16a34a
+    style APP fill:#dcfce7,stroke:#16a34a
+```
+
+### Bản MySQL khác bản SQLite ở đâu
+
+| Chỗ | SQLite | MySQL | Vì sao |
+|---|---|---|---|
+| Khoá chính | `INTEGER PRIMARY KEY AUTOINCREMENT` | `BIGINT UNSIGNED AUTO_INCREMENT` | cú pháp khác nhau |
+| Mốc thời gian | `TEXT` | `VARCHAR(19)` — **không dùng `DATETIME`** | xem ghi chú bên dưới |
+| Ngày (`click_date`) | `TEXT` | `VARCHAR(10)` | cùng lý do |
+| Đúng/sai | `INTEGER` 0/1 | `TINYINT` 0/1 | |
+| Không phân biệt hoa/thường | `COLLATE NOCASE` từng cột | collation bảng `utf8mb4_unicode_ci` | MySQL đặt ở mức bảng |
+| Cột `UNIQUE` | `TEXT UNIQUE` | `VARCHAR(64)` / `VARCHAR(190)` | MySQL không đánh chỉ mục `TEXT` mà không khai độ dài; chọn ≤ 191 để chạy được cả hosting cũ giới hạn chỉ mục 767 byte |
+| Chỉ mục | `CREATE INDEX IF NOT EXISTS` riêng | khai `KEY` ngay trong `CREATE TABLE` | MySQL 8 không có `CREATE INDEX IF NOT EXISTS` |
+| Dồn nén | `VACUUM` | `OPTIMIZE TABLE` | |
+| Dung lượng | `filesize()` của tệp + `-wal` + `-shm` | `SUM(data_length + index_length)` từ `information_schema` | |
+
+**Vì sao mốc thời gian là `VARCHAR` chứ không phải `DATETIME`.** Đây là quyết
+định cố ý, không phải làm cho nhanh. Toàn hệ thống ghi mốc thời gian bằng
+chuỗi `'Y-m-d H:i:s'` do PHP sinh theo giờ UTC+7 (xem [mục 9](#9-xử-lý-thời-gian-utc7)),
+và mọi câu lệnh chỉ **so sánh chuỗi**:
+
+```sql
+WHERE click_date >= :start          -- '2026-08-09'
+WHERE expires_at > :now_expires     -- '2026-09-07 19:30:00'
+ORDER BY created_at DESC
+```
+
+Với định dạng `Y-m-d H:i:s`, thứ tự so chuỗi **trùng khít** thứ tự thời gian,
+nên giữ nguyên kiểu chuỗi thì:
+
+- Cùng một câu lệnh cho **cùng một kết quả** trên hai loại cơ sở dữ liệu.
+- Múi giờ của máy chủ MySQL (`system_time_zone`, `time_zone`) **không bao giờ**
+  làm lệch số liệu. Đây là rủi ro thật trên shared hosting: máy chủ MySQL
+  thường đặt UTC, và nếu cột là `DATETIME` thì các hàm ngày tháng của MySQL sẽ
+  hiểu sai giờ Việt Nam.
+
+Giá phải trả: không dùng được hàm ngày tháng của MySQL để truy vấn trực tiếp.
+Hệ thống không cần tới chúng — `click_date`, `click_hour`, `weekday` đều đã
+được ghi sẵn lúc phát sinh lượt nhấp.
+
+### Bốn cái bẫy tương thích
+
+Bốn lỗi dưới đây đều **chỉ xuất hiện trên MySQL** và đều tìm ra bằng cách chạy
+thật bộ kiểm định trên MariaDB, không phải bằng đọc mã.
+
+```mermaid
+flowchart LR
+    A[":q dùng lặp<br/>trong một câu lệnh"] -->|"MySQL báo lỗi<br/>Invalid parameter number"| A2["Mỗi cột<br/>một tên riêng"]
+    B["|| để nối chuỗi"] -->|"MySQL hiểu là HOẶC<br/>→ KẾT QUẢ SAI, không báo gì"| B2["Bốn dạng khớp<br/>tường minh"]
+    C["Chuỗi rỗng viết là &quot;&quot;"] -->|"SQL chuẩn: đó là tên cột"| C2["Đổi sang ''"]
+    D["exec(OPTIMIZE TABLE)"] -->|"Bảng kết quả treo lại<br/>→ mọi lệnh sau đó lỗi"| D2["query() rồi<br/>đọc hết kết quả"]
+
+    style B fill:#fee2e2,stroke:#dc2626
+    style B2 fill:#dcfce7,stroke:#16a34a
+    style A2 fill:#dcfce7,stroke:#16a34a
+    style C2 fill:#dcfce7,stroke:#16a34a
+    style D2 fill:#dcfce7,stroke:#16a34a
+```
+
+**1. Dùng lặp một tên tham số.** SQLite cho phép, MySQL với native prepares
+(`ATTR_EMULATE_PREPARES = false`) báo `Invalid parameter number`:
+
+```php
+// SAI trên MySQL — :q xuất hiện năm lần
+'... WHERE l.code LIKE :q OR l.target_url LIKE :q OR ...'
+
+// ĐÚNG — mỗi cột một tên
+'... WHERE l.code LIKE :q_code OR l.target_url LIKE :q_url OR ...'
+```
+
+**2. Phép `||`.** Đây là cái bẫy nguy hiểm nhất, vì **không có thông báo lỗi
+nào**: SQLite hiểu `||` là nối chuỗi, MySQL hiểu là phép HOẶC luận lý. Câu lệnh
+lọc theo thẻ chạy êm trên cả hai nhưng MySQL trả về danh sách sai.
+
+```sql
+-- SAI: SQLite nối chuỗi, MySQL tính 0 || 0 || 0 = 0
+WHERE ("," || IFNULL(l.tags, "") || ",") LIKE :tag
+
+-- ĐÚNG: thẻ lưu dạng "thẻ1,thẻ2,thẻ3", khớp bốn vị trí có thể
+WHERE (IFNULL(l.tags, '') =    :tag_only      -- thẻ duy nhất
+    OR IFNULL(l.tags, '') LIKE :tag_first     -- 'thẻ,%'
+    OR IFNULL(l.tags, '') LIKE :tag_last      -- '%,thẻ'
+    OR IFNULL(l.tags, '') LIKE :tag_middle)   -- '%,thẻ,%'
+```
+
+**3. Chuỗi rỗng viết bằng dấu nháy kép.** `IFNULL(l.title, "")` chạy trên
+SQLite và trên MySQL với `sql_mode` mặc định, nhưng trong SQL chuẩn `""` là
+**tên cột**, và MySQL bật `ANSI_QUOTES` sẽ hiểu đúng như vậy rồi báo lỗi. Đổi
+hết sang `''`.
+
+**4. `exec()` với câu lệnh trả về bảng kết quả.** `OPTIMIZE TABLE` trả về một
+bảng (`Table` / `Op` / `Msg_type` / `Msg_text`). `PDO::exec()` không đọc cũng
+không giải phóng nó, nên câu lệnh tiếp theo **trên cùng kết nối** báo
+`Cannot execute queries while other unbuffered queries are active` — tức là
+bấm nút *Dồn nén* ở trang quản trị xong thì cả trang lỗi. Phải dùng `query()`
+rồi đọc hết kết quả bằng `fetchAll()` + `nextRowset()`.
+
+Ngoài ra hai chỗ nhỏ: cột `key` của bảng `settings` trùng từ khoá của MySQL nên
+luôn viết trong dấu `` ` `` (SQLite cũng nhận dấu này), và `Settings::set()`
+dùng xoá-rồi-thêm trong một giao dịch thay cho `ON CONFLICT … excluded` của
+SQLite hay `ON DUPLICATE KEY UPDATE … VALUES()` của MySQL.
+
+### Kết quả SUM() khác kiểu
+
+`SUM()` của MySQL trả về `DECIMAL`, mà PDO đưa về PHP dưới dạng **chuỗi**;
+SQLite trả về **số nguyên**. Mọi chỗ đọc số tổng hợp trong `Stats` đều ép kiểu
+`(int)` trước khi dùng, nên hai loại cho cùng kết quả:
+
+```php
+'clicks_today' => (int) ($periods['clicks_today'] ?? 0),
+```
+
+### Chuyển dữ liệu giữa hai loại
+
+`tools/chuyen-doi-csdl.php` chuyển hai chiều, **giữ nguyên mã số (id)** nên
+khoá ngoại và các mã QR đã in ra vẫn khớp.
+
+```mermaid
+flowchart TB
+    A["Đọc cấu hình:<br/>một phía là nguồn, phía kia là đích"] --> B
+    B["createSchema() phía đích"] --> C{"Đích có<br/>dữ liệu ?"}
+    C -->|"Có, không có --force"| STOP["DỪNG — in ra số dòng<br/>đang có ở phía đích"]
+    C -->|Trống, hoặc có --force| D{"--thu ?"}
+    D -->|Có| PRE["In số dòng sẽ chuyển<br/>rồi kết thúc, KHÔNG ghi gì"]
+    D -->|Không| E["beginTransaction() phía đích"]
+
+    E --> F["Xoá bảng đích theo thứ tự ngược<br/>để không vướng khoá ngoại"]
+    F --> G["Từng bảng: lấy giao của<br/>tên cột hai phía"]
+    G --> H["Đọc theo lô 2000 dòng<br/>ORDER BY id, LIMIT/OFFSET"]
+    H --> I{"Lỗi ?"}
+    I -->|Có| RB["rollBack()<br/>đích trở lại nguyên trạng"]
+    I -->|Không| J["commit()"]
+    J --> K["Đối chiếu số dòng hai phía<br/>+ kiểm tra clicks không mồ côi"]
+    K --> L["In việc cần làm tiếp:<br/>đổi db_driver"]
+
+    style STOP fill:#fef3c7,stroke:#d97706
+    style PRE fill:#dbeafe,stroke:#2563eb
+    style RB fill:#fee2e2,stroke:#dc2626
+    style L fill:#dcfce7,stroke:#16a34a
+```
+
+Ba điểm đáng chú ý trong công cụ:
+
+- **Đọc theo lô 2000 dòng**, không `fetchAll()` cả bảng: một hệ thống chạy vài
+  năm có thể có hàng trăm nghìn dòng `clicks`, nạp hết vào bộ nhớ sẽ vượt
+  `memory_limit` của shared hosting.
+- **Lấy giao của tên cột hai phía** (`layTenCot()` dùng `getColumnMeta`), nên
+  chuyển được giữa hai bản phát hành lệch nhau một cột mà không vỡ.
+- **Cả lượt chuyển nằm trong một giao dịch.** Lỗi giữa đường thì hoàn tác
+  toàn bộ; không bao giờ để lại cơ sở dữ liệu chuyển dở.
+
+Công cụ này **có** trong bản phát hành `.zip` và trong bản tải từ thẻ GitHub —
+khác với `tools/tao-du-lieu-mau.php` (tạo tài khoản có mật khẩu công khai nên
+tuyệt đối không phát hành). `tools/build-release.php` có chốt kiểm tra đúng
+việc đó và dừng hẳn nếu danh sách đóng gói sai.
 
 ---
 
@@ -738,36 +927,74 @@ flowchart TB
 ## 11. Quy trình kiểm định
 
 ```bash
-php tests/run_all.php
+php tests/run_all.php              # kiểm định trên SQLite
+php tests/run_all.php --mysql      # kiểm định trên MySQL / MariaDB
 ```
 
 Script tự bật máy chủ trên cổng trống, dùng **cơ sở dữ liệu tạm** (không
-đụng dữ liệu thật), chạy bốn bộ test rồi dọn sạch.
+đụng dữ liệu thật), chạy năm bộ test rồi dọn sạch.
 
 ```mermaid
 flowchart TB
-    RUN["php tests/run_all.php"] --> T1
+    RUN["php tests/run_all.php<br/>[--mysql]"] --> T1
 
     subgraph nosrv["Không cần máy chủ"]
         T1["path_test.php — 19 hạng mục<br/>nhận diện đường dẫn ở 3 kiểu triển khai"]
         T2["qr_test.php — 54 hạng mục<br/>thuật toán QR"]
     end
 
-    T1 --> T2 --> CFG["Tạo cấu hình tạm<br/>+ cơ sở dữ liệu tạm"]
-    CFG --> SRV["Bật php -S trên cổng trống"]
+    T1 --> T2 --> CFG["Tạo cấu hình tạm:<br/>tệp .sqlite tạm, HOẶC<br/>xoá sạch bảng của CSDL MySQL kiểm định"]
+    CFG --> T5["db_test.php — 65 hạng mục<br/>lớp cơ sở dữ liệu, chạy trực tiếp"]
+    T5 --> SRV["Bật php -S trên cổng trống"]
 
     subgraph srv["Cần máy chủ"]
         T3["qr_image_test.php — 10 hạng mục<br/>đọc ngược điểm ảnh PNG"]
-        T4["app_test.php — 118 hạng mục<br/>luồng sử dụng qua HTTP thật"]
+        T4["app_test.php — 120 hạng mục<br/>luồng sử dụng qua HTTP thật"]
     end
 
     SRV --> T3 --> T4 --> CHK{"Nhật ký lỗi<br/>máy chủ sạch ?"}
-    CHK -->|Có| PASS["201 hạng mục đạt · 0 lỗi"]
+    CHK -->|Có| PASS["268 hạng mục đạt · 0 lỗi<br/>số bằng nhau ở cả hai loại CSDL"]
     CHK -->|Không| FAIL["In nhật ký lỗi ra"]
 
     style PASS fill:#dcfce7,stroke:#16a34a
     style FAIL fill:#fee2e2,stroke:#dc2626
 ```
+
+Chạy với `--mysql` thì lấy thông tin kết nối từ biến môi trường
+`RUTGON_TEST_DB_HOST` / `_PORT` / `_NAME` / `_USER` / `_PASS`, và **xoá sạch
+bảng** của cơ sở dữ liệu đó trước khi chạy — chỉ trỏ vào cơ sở dữ liệu dành
+riêng cho kiểm định.
+
+```bash
+mysql -e "CREATE DATABASE rutgon_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+mysql -e "CREATE USER 'rutgon'@'127.0.0.1' IDENTIFIED BY 'mật-khẩu'"
+mysql -e "GRANT ALL ON rutgon_test.* TO 'rutgon'@'127.0.0.1'"
+
+RUTGON_TEST_DB_PASS='mật-khẩu' php tests/run_all.php --mysql
+```
+
+### Điểm mấu chốt: kiểm định theo KẾT QUẢ, không chỉ theo lỗi
+
+`tests/db_test.php` tồn tại vì lỗi tương thích nguy hiểm nhất là loại **không
+báo lỗi**. Câu lệnh lọc theo thẻ dùng `||` chạy êm trên cả hai loại cơ sở dữ
+liệu nhưng MySQL trả về danh sách sai (xem [mục 3b](#3b-hai-loại-cơ-sở-dữ-liệu)).
+Muốn bắt được thì phải kiểm **cái trả về**, không phải kiểm có nổ hay không:
+
+```php
+check('Thẻ có ở nhiều liên kết trả về đúng cả hai',
+    cungTapHop($theoThe('quan trọng'), ["alpha-{$hau}", "Gamma-{$hau}"]));
+check('Lọc theo thẻ không trả về toàn bộ liên kết',
+    count($theoThe('kế hoạch')) < count($mau));
+```
+
+Hai hạng mục canh **hai kiểu sai khác nhau**: trả về thiếu, và trả về hết. Đã
+thử đưa lỗi `||` trở lại để chắc chắn bộ kiểm định bắt được — nó báo 3 lỗi.
+
+Bộ này cũng canh **lệch cấu trúc bảng** giữa hai loại: nó dựng cấu trúc SQLite
+trong `sqlite::memory:` rồi so danh sách cột với loại đang chạy. Thêm một cột
+vào `schemaMysql()` mà quên `schemaSqlite()` (hoặc ngược lại) là báo ngay.
+
+### Điểm mấu chốt: bộ giải mã QR độc lập
 
 ### Điểm mấu chốt: bộ giải mã QR độc lập
 
@@ -799,17 +1026,24 @@ flowchart LR
 Nhờ cách này, quá trình phát triển đã phát hiện **bảng số khối sửa lỗi mức H
 bị sai** — mã QR mức H trước đó sai hoàn toàn mà nhìn bằng mắt không thấy.
 
-### Ba lỗi thật do bộ kiểm định tìm ra
+### Bảy lỗi thật do bộ kiểm định tìm ra
 
 | Lỗi | Hậu quả nếu không phát hiện |
 |---|---|
 | Bảng `NUM_ECC_BLOCKS` mức H sai từ phiên bản 8 | Mọi mã QR mức sửa lỗi H không quét được |
 | `fputcsv()` thiếu tham số `$escape` (PHP 8.4) | Chức năng xuất CSV trả về trang lỗi |
 | Đang đăng nhập vẫn POST tạo thêm tài khoản được | Tạo tài khoản ngoài ý muốn, lẫn phiên |
+| Dùng lặp một tên tham số `:q` / `:now` | Trên MySQL: ô tìm kiếm và lọc trạng thái trả về trang lỗi |
+| Nối chuỗi bằng `\|\|` khi lọc theo thẻ | Trên MySQL: **danh sách sai, không báo lỗi gì** |
+| `exec()` gọi `OPTIMIZE TABLE` | Trên MySQL: bấm *Dồn nén* xong thì cả trang quản trị lỗi |
+| Chuỗi rỗng viết bằng `""` | Lỗi trên MySQL bật `ANSI_QUOTES` |
 
 ---
 
 ## 12. Quy trình sao lưu và phục hồi
+
+Cách sao lưu khác nhau theo `db_driver`. Phần dưới đây là cho **SQLite**; với
+**MySQL** xem [bảng cuối mục này](#sao-lưu-khi-dùng-mysql).
 
 ```mermaid
 flowchart TB
@@ -848,6 +1082,35 @@ chép cả ba tệp.
 ```bash
 sqlite3 ban-sao.sqlite "PRAGMA integrity_check; SELECT COUNT(*) FROM links;"
 ```
+
+### Sao lưu khi dùng MySQL
+
+| | SQLite | MySQL |
+|---|---|---|
+| Sao lưu | Chép `data/rutgon.sqlite` (+ `-wal`, `-shm`) | `mysqldump`, hoặc cPanel → Backup, hoặc phpMyAdmin → Export |
+| **Cũng phải sao lưu** | — | **`app/config.local.php`** — không có tệp này thì bản sao cơ sở dữ liệu vô dụng vì mất thông tin kết nối |
+| Phục hồi | Chép tệp về, xoá `-wal`/`-shm` cũ | `mysql < ban-sao.sql`, hoặc phpMyAdmin → Import |
+| Kiểm tra bản sao | `PRAGMA integrity_check` | `SELECT COUNT(*) FROM links` sau khi nhập vào một cơ sở dữ liệu thử |
+
+```bash
+# Sao lưu
+mysqldump --single-transaction --default-character-set=utf8mb4 \
+    -h localhost -u tenhosting_rutgon -p tenhosting_rutgon \
+    > rutgon-$(date +%F).sql
+
+# Phục hồi
+mysql -h localhost -u tenhosting_rutgon -p tenhosting_rutgon < rutgon-2026-09-07.sql
+```
+
+`--single-transaction` cho phép sao lưu **khi hệ thống đang chạy** mà không
+khoá bảng — tương đương vai trò của lệnh `.backup` ở phía SQLite.
+`--default-character-set=utf8mb4` là bắt buộc, thiếu nó thì tiếng Việt có dấu
+trong tiêu đề liên kết bị hỏng.
+
+**Đổi loại cơ sở dữ liệu cũng là một cách sao lưu.** Chạy
+`php tools/chuyen-doi-csdl.php --sang=sqlite` là có ngay một tệp `.sqlite`
+chứa toàn bộ dữ liệu, chép đi đâu cũng được, mở bằng DB Browser for SQLite
+đọc được ngay.
 
 ---
 
@@ -985,7 +1248,7 @@ sqlite3 data/rutgon.sqlite "DELETE FROM users;"
 | `index.php` | Bảng định tuyến — nơi duy nhất khai báo đường dẫn |
 | `app/bootstrap.php` | Nạp lớp, cấu hình, múi giờ, bắt lỗi, phiên làm việc |
 | `app/config.php` | Cấu hình tĩnh (`config.local.php` để ghi đè) |
-| `app/lib/Database.php` | Kết nối SQLite + tạo bảng |
+| `app/lib/Database.php` | Kết nối SQLite **hoặc** MySQL + tạo bảng cho từng loại |
 | `app/lib/LinkService.php` | Nghiệp vụ liên kết: kiểm tra, tạo, sửa, ghi lượt nhấp |
 | `app/lib/Stats.php` | Toàn bộ truy vấn thống kê |
 | `app/lib/Auth.php` | Đăng ký, đăng nhập, ghi nhớ, phân quyền, nhật ký |
@@ -1001,7 +1264,10 @@ sqlite3 data/rutgon.sqlite "DELETE FROM users;"
 | `app/views/` | `layout.php` + `partials/` + `pages/` |
 | `assets/css/app.css` | Toàn bộ giao diện: sáng/tối, responsive, bản in |
 | `assets/js/app.js` | Tương tác — **không bắt buộc** để dùng hệ thống |
-| `tests/` | Bốn bộ kiểm định + máy chủ thử nghiệm |
+| `tools/chuyen-doi-csdl.php` | Chuyển dữ liệu hai chiều SQLite ↔ MySQL. **Có** trong bản phát hành |
+| `tools/tao-du-lieu-mau.php` | Dựng dữ liệu mẫu để xem thử. **Không** phát hành |
+| `tools/build-release.php` | Đóng gói bản phát hành, kèm chốt kiểm tra danh sách tệp |
+| `tests/` | Năm bộ kiểm định + máy chủ thử nghiệm |
 
 ---
 

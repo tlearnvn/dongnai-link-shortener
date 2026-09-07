@@ -127,6 +127,49 @@ if ($files === []) {
     exit("Không tìm thấy tệp nào để đóng gói.\n");
 }
 
+// ---------------------------------------------------------- chốt an toàn
+/**
+ * Những tệp KHÔNG BAO GIỜ được đi theo bản phát hành, và những tệp BẮT BUỘC
+ * phải có. Kiểm ngay ở đây để một lần sửa danh sách $include/$exclude cho
+ * hỏng là biết liền, thay vì phát hành xong mới phát hiện.
+ */
+$camTuyetDoi = [
+    '#^tools/tao-du-lieu-mau\.php$#' => 'công cụ dựng dữ liệu mẫu (tạo tài khoản có mật khẩu công khai)',
+    '#^tools/build-release\.php$#' => 'chính công cụ đóng gói',
+    '#^tests/#' => 'bộ kiểm định (mã PHP chạy được, sẽ tạo dữ liệu rác)',
+    '#\.sqlite(-wal|-shm)?$#' => 'tệp dữ liệu thật',
+    '#^app/config\.local\.php$#' => 'cấu hình riêng của máy chủ (có mật khẩu cơ sở dữ liệu)',
+    '#(^|/)\.git#' => 'tệp của git',
+];
+$batBuoc = [
+    'index.php',
+    '.htaccess',
+    'app/bootstrap.php',
+    'app/config.php',
+    'app/lib/Database.php',
+    'tools/chuyen-doi-csdl.php',
+];
+
+$viPham = [];
+foreach ($files as $rel) {
+    foreach ($camTuyetDoi as $pattern => $lyDo) {
+        if (preg_match($pattern, $rel) === 1) {
+            $viPham[] = "  · {$rel} — {$lyDo}";
+        }
+    }
+}
+foreach ($batBuoc as $rel) {
+    if (!in_array($rel, $files, true)) {
+        $viPham[] = "  · thiếu {$rel} — tệp này bắt buộc phải có";
+    }
+}
+if ($viPham !== []) {
+    echo "\n\033[31m✗ Danh sách đóng gói không hợp lệ, đã dừng:\033[0m\n";
+    echo implode("\n", $viPham) . "\n\n";
+    echo "Sửa \$include / \$exclude trong tools/build-release.php rồi chạy lại.\n\n";
+    exit(1);
+}
+
 // ------------------------------------------------------------------ tạo .zip
 if (!is_dir($distDir) && !mkdir($distDir, 0775, true) && !is_dir($distDir)) {
     exit("Không tạo được thư mục dist/\n");
@@ -205,6 +248,10 @@ function quickStart(string $version): string
        - Tab Extensions: tick pdo_sqlite, sqlite3, mbstring, gd
        - Bam Save
 
+       (Chi khi dung MySQL thi tick them pdo_mysql. Cai lan dau
+        thi CU DE SQLITE - khong can tao co so du lieu, khong
+        can mat khau. Doi sang MySQL luc nao cung duoc.)
+
     2. GIAI NEN
        cPanel -> File Manager -> vao public_html
        - Upload tep .zip nay
@@ -256,10 +303,26 @@ function quickStart(string $version): string
     Nen sao luu moi tuan va TRUOC MOI LAN NANG CAP.
 
     ----------------------------------------------------------------
+    MUON DUNG MYSQL THAY CHO SQLITE ?
+
+    Khong bat buoc. SQLite du dung cho hau het truong hop va sao
+    luu de hon nhieu. Doi sang MySQL khi hosting gioi han dung
+    luong thu muc, hoac nhieu nguoi tao lien ket cung luc.
+
+    Doi luc nao cung duoc va GIU NGUYEN toan bo du lieu:
+    lien ket ngan va ma QR da in ra van dung binh thuong.
+
+      php tools/chuyen-doi-csdl.php --sang=mysql --thu   (xem truoc)
+      php tools/chuyen-doi-csdl.php --sang=mysql         (chuyen that)
+
+    Huong dan tung buoc, ke ca cach chay khi hosting khong co SSH:
+    docs/cai-dat-cpanel.md, muc "Dung MySQL thay cho SQLite".
+
+    ----------------------------------------------------------------
     NANG CAP LEN BAN MOI
 
-    1. Sao luu thu muc data/
-    2. Ghi de: index.php, .htaccess, app/, assets/
+    1. Sao luu thu muc data/ (hoac Export co so du lieu MySQL)
+    2. Ghi de: index.php, .htaccess, app/, assets/, tools/
     3. KHONG cham vao: data/ va app/config.local.php
     4. Mo trang chu - bang moi (neu co) tu tao
 

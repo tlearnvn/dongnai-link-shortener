@@ -1,6 +1,6 @@
 # Tài liệu hệ thống
 
-**Rút gọn link — Phòng GDPT-GDTX Sở GDĐT Đồng Nai** · phiên bản 1.0.0
+**Rút gọn link — Phòng GDPT-GDTX Sở GDĐT Đồng Nai** · phiên bản 1.1.0
 
 ---
 
@@ -29,6 +29,7 @@
 | Đặt mật khẩu cho liên kết | [Hướng dẫn §9](huong-dan-su-dung.md#9-bảo-vệ-và-hẹn-giờ-liên-kết) |
 | Tạo nhiều liên kết một lượt | [Hướng dẫn §10](huong-dan-su-dung.md#10-tạo-nhiều-liên-kết-một-lượt) |
 | Cấp / khoá tài khoản | [Hướng dẫn §13](huong-dan-su-dung.md#13-dành-cho-quản-trị-viên) |
+| Xem toàn bộ dữ liệu của mọi người | [Hướng dẫn §13](huong-dan-su-dung.md#xem-toàn-bộ-dữ-liệu-của-mọi-người) |
 
 ### Việc kỹ thuật
 
@@ -41,6 +42,10 @@
 | Nâng cấp lên bản mới | [Cài đặt](cai-dat-cpanel.md#nâng-cấp-lên-bản-mới) · [Kỹ thuật §13](quy-trinh-ky-thuat.md#13-quy-trình-nâng-cấp-phiên-bản) |
 | Sao lưu và phục hồi | [Kỹ thuật §12](quy-trinh-ky-thuat.md#12-quy-trình-sao-lưu-và-phục-hồi) |
 | Sơ đồ cơ sở dữ liệu | [Kỹ thuật §3](quy-trinh-ky-thuat.md#3-cơ-sở-dữ-liệu) |
+| Đổi sang MySQL (hoặc quay lại SQLite) | [Cài đặt §13](cai-dat-cpanel.md#dùng-mysql-thay-cho-sqlite) · [Kỹ thuật §3b](quy-trinh-ky-thuat.md#3b-hai-loại-cơ-sở-dữ-liệu) |
+| Nên dùng SQLite hay MySQL | [Cài đặt §13](cai-dat-cpanel.md#nên-dùng-loại-nào) |
+| Quản trị viên xem được những gì | [Kỹ thuật §8](quy-trinh-ky-thuat.md#phạm-vi-dữ-liệu-đọc-được) |
+| Dựng dữ liệu mẫu để xem thử | [Kỹ thuật §8](quy-trinh-ky-thuat.md#dựng-dữ-liệu-mẫu-để-xem-thử) |
 | Các lớp bảo mật | [Kỹ thuật §10](quy-trinh-ky-thuat.md#10-bảo-mật) |
 | Chạy bộ kiểm định | [Kỹ thuật §11](quy-trinh-ky-thuat.md#11-quy-trình-kiểm-định) |
 | Xử lý sự cố | [Kỹ thuật §14](quy-trinh-ky-thuat.md#14-xử-lý-sự-cố-thường-gặp) · [Cài đặt](cai-dat-cpanel.md#xử-lý-sự-cố-khi-cài-đặt) |
@@ -70,13 +75,15 @@ flowchart TB
     C --> C2["Đặt site_url"]
     C --> C3["Bật HTTPS"]
     C --> C4["Sao lưu tự động"]
-    C --> C5["Nâng cấp"]
+    C --> C5["Dùng MySQL thay cho SQLite"]
+    C --> C6["Nâng cấp"]
 
     T --> T1["Kiến trúc· định tuyến"]
     T --> T2["Cơ sở dữ liệu (7 bảng)"]
+    T --> T2B["Hai loại CSDL:<br/>SQLite và MySQL"]
     T --> T3["Luồng rút gọn· chuyển hướng"]
     T --> T4["Bộ tạo mã QR"]
-    T --> T5["Xác thực· phân quyền"]
+    T --> T5["Xác thực· phân quyền<br/>phạm vi dữ liệu đọc được"]
     T --> T6["Xử lý thời gian UTC+7"]
     T --> T7["Bảo mật (4 lớp)"]
     T --> T8["Kiểm định· sao lưu"]
@@ -91,7 +98,7 @@ flowchart TB
 
 ## Thư mục ảnh
 
-Toàn bộ ảnh minh hoạ nằm trong [`images/`](images) — 35 ảnh chụp từ hệ thống
+Toàn bộ ảnh minh hoạ nằm trong [`images/`](images) — 36 ảnh chụp từ hệ thống
 đang chạy thật, dữ liệu mẫu mô phỏng công việc của Sở. Dựng lại đúng bộ dữ liệu
 đó bằng `php tools/tao-du-lieu-mau.php`.
 
@@ -106,6 +113,7 @@ Toàn bộ ảnh minh hoạ nằm trong [`images/`](images) — 35 ảnh chụp 
 | Trạng thái liên kết | `25-lien-ket-co-mat-khau` · `26-lien-ket-tam-dung` |
 | Giao diện | `27-giao-dien-toi` · `28-thong-ke-toi` · `29-dien-thoai-trang-chu` · `30-dien-thoai-bang-dieu-khien` |
 | Phạm vi dữ liệu | `31-quan-tri-tat-ca-lien-ket` · `32-bang-dieu-khien-tat-ca` · `33-thong-ke-tat-ca` · `34-nguoi-dung-thuong-chi-thay-cua-minh` · `35-nguoi-dung-thuong-bi-chan` |
+| Cơ sở dữ liệu | `36-quan-tri-mysql` |
 
 > Ảnh chụp dùng tên miền ví dụ `rutgon.dongnai.edu.vn` và **dữ liệu mẫu** —
 > không phải số liệu thật của đơn vị.

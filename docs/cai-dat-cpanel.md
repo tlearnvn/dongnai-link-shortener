@@ -22,8 +22,9 @@ MySQL.
 10. [Cài vào thư mục con](#cài-vào-thư-mục-con)
 11. [Bật HTTPS](#bật-https)
 12. [Đặt sao lưu tự động](#đặt-sao-lưu-tự-động)
-13. [Nâng cấp lên bản mới](#nâng-cấp-lên-bản-mới)
-14. [Xử lý sự cố khi cài đặt](#xử-lý-sự-cố-khi-cài-đặt)
+13. [Dùng MySQL thay cho SQLite](#dùng-mysql-thay-cho-sqlite)
+14. [Nâng cấp lên bản mới](#nâng-cấp-lên-bản-mới)
+15. [Xử lý sự cố khi cài đặt](#xử-lý-sự-cố-khi-cài-đặt)
 
 ---
 
@@ -117,14 +118,19 @@ CHANGELOG.md
 
 | Phần mở rộng | Vai trò |
 |---|---|
-| `pdo_sqlite` | **Bắt buộc** — cơ sở dữ liệu |
-| `sqlite3` | **Bắt buộc** |
 | `mbstring` | **Bắt buộc** — xử lý tiếng Việt |
+| `pdo_sqlite` | **Bắt buộc** nếu dùng SQLite (cách mặc định) |
+| `sqlite3` | Đi kèm `pdo_sqlite` |
+| `pdo_mysql` | **Bắt buộc** nếu dùng MySQL — xem [mục 13](#dùng-mysql-thay-cho-sqlite) |
 | `gd` | Cần cho mã QR dạng PNG |
 | `openssl` | Nên có |
 | `curl` | Chỉ cần khi bật "tự lấy tiêu đề trang đích" |
 
 5. Bấm **Save**
+
+> Cài lần đầu thì **cứ để SQLite** — không cần tick `pdo_mysql`, không cần tạo
+> cơ sở dữ liệu, không cần mật khẩu. Đổi sang MySQL lúc nào cũng được và giữ
+> nguyên toàn bộ dữ liệu (mục 13).
 
 > **Cách kiểm tra nhanh:** tạo tệp `kiemtra.php` trong `public_html` với nội
 > dung `<?php phpinfo();` rồi mở `ten-mien.vn/kiemtra.php`. Tìm mục
@@ -362,6 +368,223 @@ toàn bộ, gồm cả cơ sở dữ liệu.
 
 ---
 
+## Dùng MySQL thay cho SQLite
+
+Hệ thống chạy được trên hai loại cơ sở dữ liệu. Mặc định là **SQLite** — một
+tệp duy nhất, không cần cài gì. Đổi sang **MySQL / MariaDB** lúc nào cũng
+được, và giữ nguyên toàn bộ dữ liệu đang có.
+
+### Nên dùng loại nào
+
+| | SQLite (mặc định) | MySQL / MariaDB |
+|---|---|---|
+| Cài đặt | Không cần làm gì | Tạo cơ sở dữ liệu + người dùng trong cPanel |
+| Sao lưu | Chép một tệp là xong | phpMyAdmin → Export, hoặc Backup của cPanel |
+| Di chuyển sang hosting khác | Chép tệp | Export rồi Import |
+| Nhiều người ghi cùng lúc | Ghi tuần tự, một lúc một người | Ghi song song tốt hơn |
+| Dung lượng dữ liệu | Tốt tới hàng trăm nghìn lượt nhấp | Không lo về dung lượng |
+| Hosting giới hạn số inode | Chỉ tốn 1–3 tệp | Không tốn tệp nào |
+| Hosting giới hạn dung lượng ổ đĩa | Tệp nằm trong hạn mức đĩa | Thường tính vào hạn mức riêng |
+
+**Cứ dùng SQLite** nếu chỉ một Phòng dùng và mỗi ngày vài trăm tới vài nghìn
+lượt nhấp — nó đơn giản hơn hẳn ở khâu sao lưu. Chuyển sang MySQL khi:
+
+- Hosting **giới hạn dung lượng thư mục** nhưng cấp cơ sở dữ liệu riêng
+- Nhiều người trong Phòng **tạo liên kết cùng lúc** và thấy chậm
+- Đơn vị đã có **quy trình sao lưu MySQL** sẵn và muốn dùng chung
+- `data/` không cấp được quyền ghi (hosting khoá), nhưng MySQL thì có
+
+### Cách 1 — Cài mới, dùng MySQL ngay từ đầu
+
+**A. Tạo cơ sở dữ liệu trong cPanel**
+
+1. cPanel → **MySQL® Databases**
+2. Ô *Create New Database*: nhập tên, ví dụ `rutgon` → **Create Database**
+   → cPanel sẽ đặt tên đầy đủ kiểu `tenhosting_rutgon`, **ghi lại tên này**
+3. Kéo xuống *Add New User*: nhập tên và mật khẩu (dùng nút *Password
+   Generator* rồi **lưu mật khẩu lại**) → **Create User**
+4. Kéo xuống *Add User To Database*: chọn người dùng vừa tạo và cơ sở dữ liệu
+   vừa tạo → **Add** → tick **ALL PRIVILEGES** → **Make Changes**
+
+**B. Bật phần mở rộng**
+
+cPanel → **Select PHP Version** → tab **Extensions** → tick `pdo_mysql`
+→ **Save**.
+
+**C. Khai vào cấu hình**
+
+Tạo (hoặc sửa) tệp `app/config.local.php`:
+
+```php
+<?php
+return [
+    'site_url' => 'https://ten-mien-cua-ban.vn',
+
+    'db_driver' => 'mysql',
+    'db_host' => 'localhost',
+    'db_name' => 'tenhosting_rutgon',
+    'db_user' => 'tenhosting_rutgon',
+    'db_pass' => 'mật-khẩu-vừa-tạo',
+];
+```
+
+> `db_host` trên cPanel gần như luôn là `localhost`. Chỉ khi nhà cung cấp ghi
+> rõ một địa chỉ khác (kiểu `mysql.tenhosting.vn`) thì mới thay.
+
+**D. Mở trang chủ** — hệ thống tự tạo 7 bảng rồi hiện trang rút gọn. Tiếp tục
+từ [Bước 6](#bước-6--tạo-tài-khoản-quản-trị).
+
+### Cách 2 — Đang dùng SQLite, chuyển sang MySQL
+
+Dữ liệu hiện có được chuyển sang nguyên vẹn: liên kết, mã QR, người dùng, toàn
+bộ lượt nhấp và thống kê. **Mã số (id) giữ nguyên** nên liên kết ngắn và mã QR
+đã in ra vẫn dùng bình thường.
+
+```mermaid
+flowchart TD
+    A["1· SAO LƯU data/rutgon.sqlite<br/>chép ra chỗ khác, đừng bỏ qua"] --> B
+    B["2· Tạo cơ sở dữ liệu MySQL trống<br/>cPanel → MySQL Databases"] --> C
+    C["3· Tick pdo_mysql<br/>Select PHP Version → Extensions"] --> D
+    D["4· Khai db_host/db_name/db_user/db_pass<br/>NHƯNG vẫn để db_driver = 'sqlite'"] --> E
+    E["5· Chạy thử: --sang=mysql --thu<br/>chỉ xem trước, không ghi gì"] --> F
+    F{"Số dòng có đúng<br/>như đang dùng ?"}
+    F -->|Không| D
+    F -->|Có| G["6· Chuyển thật: --sang=mysql"] --> H
+    H["7· Đổi db_driver thành 'mysql'"] --> I
+    I["8· Mở /quan-tri/cai-dat kiểm tra"] --> J
+    J{"Loại cơ sở dữ liệu<br/>đã là MySQL ?"}
+    J -->|Có| K["Xong — GIỮ tệp .sqlite cũ<br/>làm bản sao lưu"]
+    J -->|Không| L["Đổi db_driver về 'sqlite'<br/>là quay lại như cũ ngay"]
+
+    style A fill:#fef3c7,stroke:#d97706
+    style D fill:#fef3c7,stroke:#d97706
+    style E fill:#dbeafe,stroke:#2563eb
+    style K fill:#dcfce7,stroke:#16a34a
+    style L fill:#fee2e2,stroke:#dc2626
+```
+
+**Bước 1–4** làm như Cách 1 ở trên, chỉ khác một điểm quan trọng: **chưa đổi
+`db_driver`**. Cứ để `'sqlite'`, và thêm bốn dòng MySQL vào bên dưới:
+
+```php
+<?php
+return [
+    'site_url' => 'https://ten-mien-cua-ban.vn',
+
+    // Vẫn là sqlite — chưa đổi. Đổi sau khi chuyển xong dữ liệu.
+    'db_driver' => 'sqlite',
+
+    'db_host' => 'localhost',
+    'db_name' => 'tenhosting_rutgon',
+    'db_user' => 'tenhosting_rutgon',
+    'db_pass' => 'mật-khẩu-vừa-tạo',
+];
+```
+
+**Bước 5 — Xem trước.** Công cụ chuyển đổi chạy từ dòng lệnh. Có ba cách chạy
+trên hosting, chọn cách nào có sẵn:
+
+<details>
+<summary><b>Cách A — cPanel Terminal</b> (nhanh nhất, nếu hosting có)</summary>
+
+cPanel → **Terminal**, rồi gõ:
+
+```bash
+cd ~/public_html
+php tools/chuyen-doi-csdl.php --sang=mysql --thu
+```
+
+Kết quả in ra ngay trên màn hình.
+</details>
+
+<details>
+<summary><b>Cách B — cPanel Cron Jobs</b> (hosting nào cũng có)</summary>
+
+cPanel → **Cron Jobs**:
+
+1. *Common Settings*: chọn **Once Per Five Minutes**
+2. *Command*: dán lệnh sau, thay `tenhosting` bằng tên tài khoản hosting
+
+   ```
+   /usr/local/bin/php /home/tenhosting/public_html/tools/chuyen-doi-csdl.php --sang=mysql --thu
+   ```
+
+3. Điền email vào ô **Cron Email** ở đầu trang để nhận kết quả
+4. **Add New Cron Job**, chờ tới 5 phút, đọc email
+5. **XOÁ cron job này ngay sau khi xong** — nếu không nó chạy mãi
+
+> Không biết đường dẫn `php`? Trong *Select PHP Version* của cPanel thường có
+> ghi. Hoặc thử lần lượt `/usr/local/bin/php`, `/usr/bin/php`,
+> `/opt/cpanel/ea-php82/root/usr/bin/php`.
+</details>
+
+<details>
+<summary><b>Cách C — SSH</b> (nếu hosting cấp)</summary>
+
+```bash
+ssh tenhosting@ten-mien-cua-ban.vn
+cd public_html
+php tools/chuyen-doi-csdl.php --sang=mysql --thu
+```
+</details>
+
+Kết quả xem trước trông như sau — đối chiếu số liên kết và số lượt nhấp với
+những gì trang **Quản trị** đang hiện:
+
+```
+CHUYỂN ĐỔI CƠ SỞ DỮ LIỆU
+──────────────────────────────────────────────────────────────────
+  Nguồn : SQLite — /home/tenhosting/public_html/data/rutgon.sqlite
+  Đích  : MySQL — tenhosting_rutgon @ localhost:3306
+  Chế độ: XEM TRƯỚC — không ghi gì vào phía đích
+──────────────────────────────────────────────────────────────────
+
+Số dòng sẽ chuyển
+  settings                  9 dòng
+  users                     4 dòng
+  links                    37 dòng
+  clicks                4.128 dòng
+  remember_tokens           2 dòng
+  login_attempts           15 dòng
+  audit_log               196 dòng
+  TỔNG                  4.391 dòng
+```
+
+**Bước 6 — Chuyển thật.** Chạy lại cùng lệnh, **bỏ `--thu`**:
+
+```bash
+php tools/chuyen-doi-csdl.php --sang=mysql
+```
+
+Công cụ ghi trong **một giao dịch**: có lỗi ở giữa thì hoàn tác toàn bộ, phía
+MySQL trở lại đúng trạng thái trước khi chạy — không bao giờ để lại dữ liệu
+chuyển dở. Chạy xong nó đối chiếu số dòng hai phía và kiểm tra khoá ngoại.
+
+**Bước 7 — Đổi `db_driver`** trong `app/config.local.php` thành `'mysql'`.
+
+**Bước 8 — Kiểm tra.** Mở `/quan-tri/cai-dat`, mục **Thông tin kỹ thuật**:
+
+![Trang quản trị khi chạy MySQL](images/36-quan-tri-mysql.png)
+
+Rồi bấm thử một liên kết rút gọn và mở trang thống kê của nó, xem lượt nhấp
+mới có được ghi không.
+
+> **Quay lại SQLite?** Đổi `db_driver` về `'sqlite'` là xong — tệp `.sqlite`
+> cũ vẫn nguyên. Chỉ mất những gì tạo thêm trong lúc đang chạy MySQL. Muốn
+> mang cả những thứ đó về thì chạy
+> `php tools/chuyen-doi-csdl.php --sang=sqlite --force`.
+
+### Sau khi chuyển sang MySQL
+
+| Việc | Thay đổi |
+|---|---|
+| **Sao lưu** | Không còn chép tệp `data/` nữa. Dùng cPanel → **Backup** → *Download a MySQL Database Backup*, hoặc phpMyAdmin → **Export** → SQL. Nhớ sao lưu **cả tệp `app/config.local.php`** vì tệp này chứa mật khẩu kết nối |
+| **Nâng cấp bản mới** | Vẫn ghi đè `index.php`, `.htaccess`, `app/`, `assets/`, `tools/`; vẫn **không chạm** `app/config.local.php`. Thư mục `data/` giờ chỉ còn chứa `error.log` |
+| **Tệp `.sqlite` cũ** | **Giữ lại** ít nhất vài tuần. Chắc chắn ổn rồi mới tải về máy lưu và xoá khỏi hosting |
+| **Bảo mật** | `app/config.local.php` giờ chứa mật khẩu cơ sở dữ liệu. `.htaccess` đã chặn cả thư mục `app/`, nhưng nên mở thử `ten-mien.vn/app/config.local.php` để chắc chắn nhận **403** |
+
+---
+
 ## Nâng cấp lên bản mới
 
 ```mermaid
@@ -504,24 +727,119 @@ Hoặc đặt tự động trong `app/config.local.php`:
 ```
 </details>
 
+<details>
+<summary><b>MySQL — báo "cần phần mở rộng PHP pdo_mysql"</b></summary>
+
+Đã đặt `db_driver` = `'mysql'` nhưng chưa bật phần mở rộng.
+
+cPanel → **Select PHP Version** → tab **Extensions** → tick `pdo_mysql`
+→ **Save**. Tải lại trang.
+
+Lưu ý chọn đúng phiên bản PHP mà tên miền đang dùng: nếu hosting có
+**MultiPHP Manager** thì mỗi tên miền có thể chạy một phiên bản khác nhau, và
+phải bật `pdo_mysql` cho đúng phiên bản đó.
+</details>
+
+<details>
+<summary><b>MySQL — báo "Access denied for user"</b></summary>
+
+Sai tên đăng nhập, sai mật khẩu, hoặc **chưa gán người dùng vào cơ sở dữ
+liệu**. Việc bị bỏ sót nhiều nhất là bước cuối:
+
+cPanel → **MySQL® Databases** → kéo xuống *Add User To Database* → chọn đúng
+cặp người dùng + cơ sở dữ liệu → **Add** → tick **ALL PRIVILEGES** →
+**Make Changes**.
+
+Nhớ hai điều nữa:
+- cPanel **tự thêm tiền tố** tên tài khoản hosting. Tạo tên `rutgon` thì tên
+  thật là `tenhosting_rutgon` — trong cấu hình phải ghi **tên đầy đủ**.
+- Mật khẩu có ký tự `$` hay `\` thì trong PHP phải đặt trong dấu **nháy đơn**
+  (`'mat$khau'`), đừng dùng nháy kép.
+</details>
+
+<details>
+<summary><b>MySQL — báo "Unknown database"</b></summary>
+
+Tên cơ sở dữ liệu sai, gần như luôn là do thiếu tiền tố. Vào cPanel →
+**MySQL® Databases**, xem bảng *Current Databases* và **chép đúng nguyên văn**
+tên ở đó vào `db_name`.
+</details>
+
+<details>
+<summary><b>MySQL — báo "Connection refused" hoặc treo rất lâu</b></summary>
+
+`db_host` sai. Trên shared hosting cPanel gần như luôn là `localhost` (không
+phải `127.0.0.1`, và không phải tên miền của bạn).
+
+Nếu nhà cung cấp yêu cầu nối qua socket, khai thêm dòng này và bỏ qua
+`db_host`/`db_port`:
+
+```php
+'db_socket' => '/var/lib/mysql/mysql.sock',
+```
+</details>
+
+<details>
+<summary><b>Chuyển đổi báo "DỪNG LẠI — phía đích đã có sẵn dữ liệu"</b></summary>
+
+Đây là **chốt an toàn**, không phải lỗi: cơ sở dữ liệu đích không trống nên
+công cụ không tự ghi đè.
+
+- Đây là cơ sở dữ liệu **mới tạo, chỉ để chuyển sang** → chạy lại kèm
+  `--force` để ghi đè.
+- Đây là cơ sở dữ liệu **đang có dữ liệu thật của việc khác** → **đừng** dùng
+  `--force`. Tạo một cơ sở dữ liệu khác rồi sửa `db_name`. Hệ thống cần một cơ
+  sở dữ liệu riêng, không dùng chung với ứng dụng khác.
+</details>
+
+<details>
+<summary><b>Chạy công cụ chuyển đổi từ trình duyệt thì báo 403</b></summary>
+
+Đúng như thiết kế. `tools/chuyen-doi-csdl.php` chỉ chạy được từ **dòng lệnh**
+(Terminal, Cron Job hoặc SSH) — xem ba cách ở
+[mục 13](#dùng-mysql-thay-cho-sqlite). Nếu chạy được từ trình duyệt thì người
+ngoài cũng gọi được, nên hệ thống chặn hẳn.
+</details>
+
+<details>
+<summary><b>Hosting không có Terminal, không có SSH, cron cũng không chạy</b></summary>
+
+Vẫn chuyển được, nhưng bằng tay và mất dữ liệu thống kê chi tiết:
+
+1. Xuất danh sách liên kết: đăng nhập quản trị → **Xuất CSV toàn bộ**
+2. Đổi `db_driver` sang `'mysql'` → mở trang chủ → hệ thống tạo bảng trắng
+3. Tạo lại tài khoản, rồi dùng **Tạo hàng loạt** để nhập lại các liên kết
+   (dán theo dạng `địa-chỉ | tên-tuỳ-chọn | tiêu-đề`)
+
+Số lượt nhấp cũ sẽ về 0. Nếu số liệu thống kê quan trọng thì nên
+**cứ dùng SQLite** — nó không cần dòng lệnh cho bất cứ việc gì.
+</details>
+
 ---
 
 ## Danh sách kiểm tra khi bàn giao
 
 Sao chép danh sách này để tick khi triển khai:
 
-- [ ] PHP 8.1+ đã chọn, có `pdo_sqlite`, `mbstring`, `gd`
+- [ ] PHP 8.1+ đã chọn, có `mbstring`, `gd`, và `pdo_sqlite` **hoặc**
+      `pdo_mysql` tuỳ loại cơ sở dữ liệu đã chọn
 - [ ] Đã giải nén đúng thư mục, `.htaccess` nằm cùng `index.php`
-- [ ] Thư mục `data/` có quyền ghi
+- [ ] Thư mục `data/` có quyền ghi (SQLite cần để chứa dữ liệu, MySQL cần để
+      ghi `error.log`)
 - [ ] Đã tạo `app/config.local.php` với `site_url` đúng tên miền
 - [ ] Đã bật HTTPS và buộc chuyển sang HTTPS
 - [ ] Đã tạo tài khoản quản trị và **lưu mã dự phòng**
 - [ ] Đã tắt tự đăng ký (nếu chỉ cấp tài khoản có kiểm soát)
 - [ ] `/data/rutgon.sqlite` trả về **403**
 - [ ] `/app/config.php` trả về **403**
+- [ ] `/app/config.local.php` trả về **403** (quan trọng khi dùng MySQL — tệp
+      này chứa mật khẩu cơ sở dữ liệu)
+- [ ] `/tools/chuyen-doi-csdl.php` trả về **403**
+- [ ] Trang `/quan-tri/cai-dat` hiện đúng **loại cơ sở dữ liệu** đang dùng
 - [ ] Rút gọn thử → bấm thử → tải mã QR → quét thử: đều đúng
-- [ ] Đã đặt sao lưu định kỳ
-- [ ] Đã xoá liên kết thử và tệp `kiemtra.php` (nếu có tạo)
+- [ ] Đã đặt sao lưu định kỳ — chép `data/` nếu dùng SQLite, hoặc Export
+      cơ sở dữ liệu **cùng với** `app/config.local.php` nếu dùng MySQL
+- [ ] Đã xoá liên kết thử, tệp `kiemtra.php` và cron job tạm (nếu có tạo)
 
 ---
 
