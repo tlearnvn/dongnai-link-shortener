@@ -15,6 +15,48 @@ $root = dirname(__DIR__);
 $port = 8700 + random_int(0, 200);
 $base = "http://127.0.0.1:{$port}";
 
+$totalPass = 0;
+$totalFail = 0;
+$failedSuites = [];
+
+/** Chạy một bộ test, in kết quả và cộng dồn số liệu. */
+$runSuite = static function (string $name, array $command) use ($root, &$totalPass, &$totalFail, &$failedSuites): void {
+    echo "\n\033[1m▶ {$name}\033[0m\n";
+    $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $root);
+    if (!is_resource($process)) {
+        $failedSuites[] = $name;
+        return;
+    }
+    $output = (string) stream_get_contents($pipes[1]);
+    $errors = (string) stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    $exit = proc_close($process);
+
+    echo $output;
+    if (trim($errors) !== '') {
+        echo "\033[31m{$errors}\033[0m";
+    }
+
+    $plain = preg_replace('/\033\[[0-9;]*m/', '', $output) ?? '';
+    if (preg_match('/Kết quả: .*?(\d+) đạt.*?(\d+) lỗi/u', $plain, $m)) {
+        $totalPass += (int) $m[1];
+        $totalFail += (int) $m[2];
+    }
+    if ($exit !== 0) {
+        $failedSuites[] = $name;
+    }
+};
+
+echo "\033[1m╔══════════════════════════════════════════════════════════════╗\033[0m\n";
+echo "\033[1m║  Kiểm định hệ thống Rút gọn link — Sở GDĐT Đồng Nai          ║\033[0m\n";
+echo "\033[1m╚══════════════════════════════════════════════════════════════╝\033[0m\n";
+
+// Bộ test không cần máy chủ. Chạy trước vì path_test có tạm thay
+// app/config.local.php để thử phần tự nhận diện địa chỉ.
+$runSuite('Nhận diện đường dẫn', [PHP_BINARY, $root . '/tests/path_test.php']);
+$runSuite('Bộ tạo mã QR (thuật toán)', [PHP_BINARY, $root . '/tests/qr_test.php']);
+
 // Cơ sở dữ liệu riêng cho lần kiểm định này
 $tmpDir = sys_get_temp_dir() . '/rutgon-test-' . bin2hex(random_bytes(4));
 mkdir($tmpDir, 0775, true);
@@ -59,11 +101,8 @@ foreach ([SIGINT, SIGTERM] as $signal) {
     });
 }
 
-echo "\033[1m╔══════════════════════════════════════════════════════════════╗\033[0m\n";
-echo "\033[1m║  Kiểm định hệ thống Rút gọn link — Sở GDĐT Đồng Nai          ║\033[0m\n";
-echo "\033[1m╚══════════════════════════════════════════════════════════════╝\033[0m\n";
-echo "Máy chủ thử nghiệm: {$base}\n";
-echo "Dữ liệu tạm:        {$tmpDir}/kiem-dinh.sqlite\n";
+echo "\n\033[2mMáy chủ thử nghiệm: {$base}\033[0m\n";
+echo "\033[2mDữ liệu tạm:        {$tmpDir}/kiem-dinh.sqlite\033[0m\n";
 
 $descriptors = [1 => ['file', '/dev/null', 'w'], 2 => ['file', $tmpDir . '/server.log', 'w']];
 $server = proc_open(
@@ -91,42 +130,8 @@ if (!$ready) {
     exit("Máy chủ thử nghiệm không phản hồi.\n");
 }
 
-$suites = [
-    'Bộ tạo mã QR (thuật toán)' => [PHP_BINARY, $root . '/tests/qr_test.php'],
-    'Ảnh mã QR trả về từ máy chủ' => [PHP_BINARY, $root . '/tests/qr_image_test.php', $base],
-    'Luồng sử dụng qua HTTP' => [PHP_BINARY, $root . '/tests/app_test.php', $base],
-];
-
-$totalPass = 0;
-$totalFail = 0;
-$failedSuites = [];
-
-foreach ($suites as $name => $command) {
-    echo "\n\033[1m▶ {$name}\033[0m\n";
-    $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $root);
-    if (!is_resource($process)) {
-        $failedSuites[] = $name;
-        continue;
-    }
-    $output = (string) stream_get_contents($pipes[1]);
-    $errors = (string) stream_get_contents($pipes[2]);
-    fclose($pipes[1]);
-    fclose($pipes[2]);
-    $exit = proc_close($process);
-
-    echo $output;
-    if (trim($errors) !== '') {
-        echo "\033[31m{$errors}\033[0m";
-    }
-
-    if (preg_match('/Kết quả: .*?(\d+) đạt.*?(\d+) lỗi/u', preg_replace('/\033\[[0-9;]*m/', '', $output) ?? '', $m)) {
-        $totalPass += (int) $m[1];
-        $totalFail += (int) $m[2];
-    }
-    if ($exit !== 0) {
-        $failedSuites[] = $name;
-    }
-}
+$runSuite('Ảnh mã QR trả về từ máy chủ', [PHP_BINARY, $root . '/tests/qr_image_test.php', $base]);
+$runSuite('Luồng sử dụng qua HTTP', [PHP_BINARY, $root . '/tests/app_test.php', $base]);
 
 // Nhật ký lỗi của máy chủ (nếu có) là dấu hiệu vấn đề tiềm ẩn
 $errorLog = $tmpDir . '/error.log';

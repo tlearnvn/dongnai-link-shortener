@@ -249,6 +249,7 @@ Script tự bật máy chủ trên một cổng trống, dùng **cơ sở dữ l
 
 | Bộ test | Nội dung |
 |---|---|
+| `tests/path_test.php` | Nhận diện đường dẫn ở cả ba kiểu triển khai: ngay gốc tên miền, trong thư mục con, và máy chủ không bật rewrite (`/index.php/...`); kèm các tình huống proxy/CDN, cổng lẻ, header `Host` chứa ký tự lạ |
 | `tests/qr_test.php` | Thuật toán tạo mã QR: đối chiếu bảng vị trí hoa văn căn chỉnh và bảng dung lượng với chuẩn ISO/IEC 18004, giải mã ngược ma trận về chuỗi gốc cho cả 40 phiên bản × 4 mức sửa lỗi, kiểm tra syndrome Reed–Solomon bằng 0 |
 | `tests/qr_image_test.php` | Đọc từng điểm ảnh của tệp PNG do máy chủ trả về, dựng lại ma trận rồi giải mã — đúng đường mà máy quét thật đi, thử 9 kiểu tuỳ chỉnh |
 | `tests/app_test.php` | Luồng sử dụng qua HTTP thật: rút gọn, tên tuỳ chọn trùng/bị giữ, chuyển hướng, mật khẩu liên kết, hạn dùng, giới hạn lượt, phân quyền, CSRF, XSS, API, khu quản trị |
@@ -257,7 +258,7 @@ Bộ giải mã QR trong `tests/qr_decoder.php` được viết **độc lập**
 `app/lib/QrCode.php` (dựng lại từ mô tả trong chuẩn), nên nếu bộ mã hoá sai
 thì test phát hiện được, chứ không phải hai bên cùng sai rồi triệt tiêu nhau.
 
-Kết quả mong đợi: **182 hạng mục đạt, 0 lỗi**, nhật ký máy chủ sạch.
+Kết quả mong đợi: **201 hạng mục đạt, 0 lỗi**, nhật ký máy chủ sạch.
 
 ---
 
